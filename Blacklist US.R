@@ -1,6 +1,6 @@
 library.path <- .libPaths("C:/Users/steph/Documents/R/win-library/4.0")
 
-cat("Forecast start\n")
+cat("Blacklist start\n")
 
 
 suppressMessages(library(tidyverse, lib.loc = library.path))

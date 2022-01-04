@@ -178,12 +178,12 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% Q_iso$asin, ]
-prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-03-13", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-03-27", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 65 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol = 67 , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
@@ -318,12 +318,12 @@ pred_df_holt_damp_beta <- arrange(pred_df_holt_damp_beta, desc(pred_df_holt_damp
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% pred_df_holt_damp_beta[1:20,1], ]
-prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-03-13", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-03-27", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 65 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol = 67 , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
