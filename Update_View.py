@@ -58,7 +58,7 @@ def connect():
         cur = conn.cursor()
         
         #execute a statement
-        print('PostgreSQL database version:')
+        print('PostgreSQL database version is this one:')
         cur.execute('SELECT version()')
 
         # display the PostgreSQL database server version
