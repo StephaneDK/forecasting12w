@@ -1,0 +1,193 @@
+library.path <- .libPaths("C:/Users/steph/Documents/R/win-library/4.0")
+
+suppressMessages(library(tidyverse, lib.loc = library.path))
+suppressMessages(library(stringr, lib.loc = library.path))
+suppressMessages(library(reshape2, lib.loc = library.path))
+suppressMessages(library(ggthemes, lib.loc = library.path))
+suppressMessages(library(gridExtra, lib.loc = library.path))
+suppressMessages(library(forecast, lib.loc = library.path))
+suppressMessages(library(aTSA, lib.loc = library.path))
+suppressMessages(library(DescTools, lib.loc = library.path))
+suppressMessages(library(plyr, lib.loc = library.path))
+suppressMessages(library(EnvStats, lib.loc = library.path))
+suppressMessages(library(qcc, lib.loc = library.path))
+suppressMessages(library(openxlsx, lib.loc = library.path))
+
+options(scipen=999, digits = 3, error=function() { traceback(2); if(!interactive()) quit("no", status = 1, runLast = FALSE) } )
+
+
+`%notin%` <- Negate(`%in%`)
+
+#Setting the directory where all files will be used from for this project
+setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
+
+#Setting the date to read the correct previous week file
+all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
+pred_date <- Sys.Date() + 6 - match(weekdays(Sys.Date()), all_days) - 7
+
+#Importing Data
+Sales_UK <- read.csv("Sales uk.csv", header = T, stringsAsFactors = FALSE)
+Sales_UK$date <- as.Date(Sales_UK$date)
+Sales_UK <- Sales_UK[Sales_UK$title != "",]
+
+#Importing Data
+forecasts <- read.csv( paste0("Forecast uk - ",pred_date,".csv"), header = T, stringsAsFactors = FALSE)
+
+
+for (i in 1:length(Sales_UK$asin)){
+  if (nchar(Sales_UK$asin[i]) == 9){
+    Sales_UK$asin[i] <- paste0("0",Sales_UK$asin[i])  
+  }
+  
+}
+
+for (i in 1:length(forecasts$asin)){
+  if (nchar(forecasts$asin[i]) == 9){
+    forecasts$asin[i] <- paste0("0",forecasts$asin[i])  
+  }
+  
+}
+
+
+
+#Creating the Data Frame with all sales data ------------------------------------------------------------------------------------
+DF <- cbind.data.frame(Sales_UK$date, Sales_UK$asin, Sales_UK$isbn, Sales_UK$title,Sales_UK$division ,Sales_UK$pub_date,Sales_UK$units ,stringsAsFactors = FALSE)
+colnames(DF) <- c("date","asin","isbn","title","Division","Publication","units")
+
+#Rearrange data with dates as columns
+Q1 <- dcast(DF, asin + isbn + title + Division + Publication ~ date, value.var="units", fun.aggregate = sum)
+
+
+
+
+
+DF <- merge(forecasts, Q1, by = "asin", all.x = TRUE)
+
+
+DF$Error <-   DF[,c(11)] - DF[,c(ncol(DF) )]
+
+DF2 <- DF[,c(1:5,(11), (ncol(DF) - 1) ,  grep("Error", colnames(DF)) )]
+colnames(DF2) <- c("asin", "isbn", "Title", "Division", "Publication", "Forecast", "Actual",  "Error")
+
+DF2$Publication <- as.Date(DF2$Publication, format = "%m/%d/%Y")
+
+DF2$Actual[is.na(DF2$Actual)] <- 0
+DF2$Error[is.na(DF2$Error)] <- 0
+
+
+
+
+#-----------------------------------------------------------------------------------------------------------#
+#                                     Saving output formatting                                              #
+#-----------------------------------------------------------------------------------------------------------#
+
+# Adding empty columns
+DF2 <- add_column(DF2, new_col = NA, .after = 5)
+
+
+colnames(DF2)[6] <- ""
+
+
+
+#Creating a workbook
+wb <- createWorkbook()
+options("openxlsx.numFmt" = "0")
+addWorksheet(wb, sheetName="UK")
+writeData(wb, sheet="UK", x=DF2)
+
+
+#Creating borders function 
+OutsideBorders <-
+  function(wb_,
+           sheet_,
+           rows_,
+           cols_,
+           border_col = "black",
+           border_thickness = "thick") {
+    left_col = min(cols_)
+    right_col = max(cols_)
+    top_row = min(rows_)
+    bottom_row = max(rows_)
+    
+    sub_rows <- list(c(bottom_row:top_row),
+                     c(bottom_row:top_row),
+                     top_row,
+                     bottom_row)
+    
+    sub_cols <- list(left_col,
+                     right_col,
+                     c(left_col:right_col),
+                     c(left_col:right_col))
+    
+    directions <- list("Left", "Right", "Top", "Bottom")
+    
+    mapply(function(r_, c_, d) {
+      temp_style <- createStyle(border = d,
+                                borderColour = border_col,
+                                borderStyle = border_thickness)
+      addStyle(
+        wb_,
+        sheet_,
+        style = temp_style,
+        rows = r_,
+        cols = c_,
+        gridExpand = TRUE,
+        stack = TRUE
+      )
+      
+    }, sub_rows, sub_cols, directions)
+  }
+
+
+
+
+
+
+
+#adding filters
+addFilter(wb, "UK", rows = 1, cols = 1:ncol(DF2))
+
+#auto width for columns
+width_vec <- suppressWarnings(apply(DF2, 2, function(x) max(nchar(as.character(x)) + 1, na.rm = TRUE)))
+width_vec_header <- nchar(colnames(DF2))  + 4
+max_vec_header <- pmax(width_vec, width_vec_header)
+setColWidths(wb, "UK",  cols = 1, widths = 13)
+setColWidths(wb, "UK",  cols = 2, widths = 15)
+setColWidths(wb, "UK",  cols = 3, widths = 50)
+setColWidths(wb, "UK",  cols = 6, widths = 8)
+
+#Centering cells
+centerStyle <- createStyle(halign = "center")
+addStyle(wb, "UK", style=centerStyle, rows = 2:nrow(DF2), cols = 6:ncol(DF2), 
+         gridExpand = T, stack = TRUE)
+
+leftStyle <- createStyle(halign = "left")
+addStyle(wb, "UK", style=leftStyle, rows = 2:nrow(DF2), cols = 1:5, 
+         gridExpand = T, stack = TRUE)
+
+# Adding borders
+invisible(OutsideBorders(
+  wb,
+  sheet_ = "UK",
+  rows_ = 1:nrow(DF2),
+  cols_ = 1:5
+))
+
+invisible(OutsideBorders(
+  wb,
+  sheet_ = "UK",
+  rows_ = 1:nrow(DF2),
+  cols_ = 7:9
+))
+
+freezePane(
+  wb,
+  sheet = "UK",
+  firstActiveRow = 2
+)
+
+saveWorkbook(wb, paste0("Slowing trending titles UK - ",pred_date +7,".xlsx"), overwrite = T) 
+
+
+
+
