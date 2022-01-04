@@ -107,7 +107,7 @@ def connect():
         conn.commit()
 
         
-        print("Omitted duplicate rows")
+        print("Omitted duplicate rows ok")
         
 
         
