@@ -62,7 +62,7 @@ Reprint <- Reprint %>%
 #Matching reprint delivery date with closest Saturday
 Reprint$Reprint.Date <- Reprint$Reprint.Date + 6 - match(weekdays(Reprint$Reprint.Date), all_days)
 
-
+cat("hello")
 
 for (i in 1:length(Sales_UK$asin)){
   if (nchar(Sales_UK$asin[i]) == 9){
