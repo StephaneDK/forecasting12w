@@ -93,7 +93,7 @@ def connect():
         WITH cte AS
         (
         SELECT ctid,
-               row_number() OVER (PARTITION BY region, model, asin,pred_at, 'Amz_inv', 'DK_inv', 'Total_inventory', 'Forecast_12w', 'Adjusted forecast_12w', 'Weeks_on_hand', 'Weeks_on_hand_AMZ', 'Inv_issue','reprint_date'
+               row_number() OVER (PARTITION BY region, model, asin,pred_at, 'Amz_inv', 'DK_inv', 'Total_inventory', 'Forecast_12w', 'Adjusted forecast_12w', 'Weeks_on_hand', 'Weeks_on_hand_AMZ', 'Inv_issue', 'reprint_date', 'reprint_quantity'
                                   ORDER BY asin) rn
                FROM experiment.forecasting_statistics_temp
         )

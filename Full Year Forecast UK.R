@@ -13,9 +13,10 @@ suppressMessages(library(plyr, lib.loc = library.path))
 suppressMessages(library(EnvStats, lib.loc = library.path))
 suppressMessages(library(qcc, lib.loc = library.path))
 suppressMessages(library(openxlsx, lib.loc = library.path))
+suppressMessages(library(magrittr, lib.loc = library.path))
 
 options(scipen=999, digits = 3, error=function() { traceback(2); if(!interactive()) quit("no", status = 1, runLast = FALSE) } )
-
+all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
 
 `%notin%` <- Negate(`%in%`)
 current_quarter <- "Q3"
@@ -25,35 +26,41 @@ setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and invento
 
 #Importing Sales Data
 Sales_UK <- read.csv("Sales uk.csv", header = T, stringsAsFactors = FALSE)
-Sales_UK$date <- as.Date(Sales_UK$date)
-Sales_UK <- Sales_UK[Sales_UK$title != "",]
+Sales_UK <- Sales_UK %>% 
+            mutate(date = as.Date(Sales_UK$date)) %>% 
+            subset(title != "")
+
 
 #Importing Reprint and AA Data
 Reprint <- read.csv("UK Inventory.csv", header = T, stringsAsFactors = FALSE)
-Reprint <- Reprint[,c(grep("ASIN", colnames(Reprint)), 
-                      grep("Available.Inventory", colnames(Reprint)), 
-                      grep("Stock.at.TBS", colnames(Reprint)), 
-                      grep("Reprint.Dates", colnames(Reprint)),
-                      grep("^Open.Purchase.Order.Quantity$", colnames(Reprint)), 
-                      grep("B3.Status", colnames(Reprint)),
-                      grep("Focus.List.Current.Status", colnames(Reprint))
-                      )]
+Reprint <- Reprint %>%
+           select(ASIN, 
+                  Available.Inventory, 
+                  Stock.at.TBS, 
+                  Reprint.Dates, 
+                  Open.Purchase.Order.Quantity, 
+                  B3.Status, 
+                  contains("Focus.List.Current.Status"),
+                  Reprint.Quantity 
+                  ) %>%
+           set_colnames(c("asin", 
+                          "Amz inv", 
+                          "TBS inv",  
+                          "Reprint.Date", 
+                          "AMZ Open Orders", 
+                          "Print Status",
+                          "AA Status",
+                          "Reprint Qty"))  %>%
+           mutate(Reprint.Date = as.Date(Reprint$Reprint.Date, format = "%d/%m/%Y"),
+                  `Amz inv` =  suppressWarnings(as.numeric(gsub(",","",`Amz inv`))),
+                  `TBS inv` =  suppressWarnings(as.numeric(gsub(",","",`TBS inv`))),
+                  `AMZ Open Orders` =  suppressWarnings(as.numeric(gsub(",","",`AMZ Open Orders`))),
+                  `Reprint Qty` = replace(`Reprint Qty`, is.na(`Reprint Qty`), NaN)
+                  )
 
 
-
-colnames(Reprint) <- c("asin", "Amz inv", "TBS inv",  "Reprint.Date", 
-                       "AMZ Open Orders", "Print Status","AA Status" )
-
-Reprint$Reprint.Date <- as.Date(Reprint$Reprint.Date, format = "%d/%m/%Y")
-
-#Adding 2 weeks for reprint delivery time and matching with closest saturday
-all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
+#Matching reprint delivery date with closest Saturday
 Reprint$Reprint.Date <- Reprint$Reprint.Date + 6 - match(weekdays(Reprint$Reprint.Date), all_days)
-Reprint$Reprint.Date <- Reprint$Reprint.Date + 7
-
-Reprint$`Amz inv` <- suppressWarnings(as.numeric(gsub(",","",Reprint$`Amz inv`)))
-Reprint$`TBS inv` <- suppressWarnings(as.numeric(gsub(",","",Reprint$`TBS inv`)))
-Reprint$`AMZ Open Orders` <- suppressWarnings(as.numeric(gsub(",","",Reprint$`AMZ Open Orders`)))
 
 
 
@@ -178,18 +185,33 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% Q_iso$asin, ]
-prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-03-27", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-04-10", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 67 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol = 69 , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
 Seas_adjQ$title <- prev_year$title
 
 
+
+#Compute seasonal percentage changes using last year data
+for (i in 1:nrow(Seas_adjQ)){
+  for ( j in 1:ncol(Seas_adjQ)){
+    if (j == 3){
+      Seas_adjQ[i,j] <- 1
+        
+    } else if (j >3) {
+      Seas_adjQ[i,j] <- prev_year[i,j] / prev_year[i,j-1]
+        
+    }
+    
+  }
+  
+}
 
 #Clean and readjust
 Seas_adjQ[is.na(Seas_adjQ)] <- 1
@@ -318,12 +340,12 @@ pred_df_holt_damp_beta <- arrange(pred_df_holt_damp_beta, desc(pred_df_holt_damp
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% pred_df_holt_damp_beta[1:20,1], ]
-prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-03-27", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-04-10", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 67 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol = 69 , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
@@ -571,10 +593,12 @@ pred_df_holt_damp_beta <- arrange(pred_df_holt_damp_beta, desc(pred_df_holt_damp
 
 pred_df_holt_damp_beta$Publication <- as.Date(pred_df_holt_damp_beta$Publication)
 
+pred_df_holt_damp_beta <- pred_df_holt_damp_beta %>%
+  relocate(`Reprint Qty`, .after = `12w_inventory_adjusted`)
 
-forecasting_statistics_temp <- pred_df_holt_damp_beta[,c(1:22,35,34,31,33,23,24,29,30,25)]
+forecasting_statistics_temp <- pred_df_holt_damp_beta[,c(1:22,35,34,31,33,23,24,29,30,25,36)]
 
-pred_df_holt_damp_beta <- pred_df_holt_damp_beta[,c(1:22,35,34,31,33,23,24,29,30,25,27,28,26)]
+pred_df_holt_damp_beta <- pred_df_holt_damp_beta[,c(1:22,35,34,31,33,23,24,29,30,25,27,28,26,36)]
 
 Hitlist_titles <- c("0241315611","0241343267","0241424305","0241357551","0241224934","0241229782","0241412471",
                     "024135871X","0241302323","0241426162","024133439X","0241440610","0241286123","0241446619",
@@ -599,9 +623,6 @@ colnames(pred_df_holt_damp_beta)[34] <- ""
 
 pred_df_holt_damp_beta$isbn <- as.character(pred_df_holt_damp_beta$isbn)
 pred_df_holt_damp_beta$asin <- as.character(pred_df_holt_damp_beta$asin)
-
-
-
 
 
 
@@ -742,7 +763,7 @@ invisible(OutsideBorders(
   wb,
   sheet_ = "UK",
   rows_ = 1:nrow(pred_df_holt_damp_beta),
-  cols_ = 35:38
+  cols_ = 35:39
 ))
 
 freezePane(
@@ -757,6 +778,7 @@ pred_date <- Sys.Date() + 6 - match(weekdays(Sys.Date()), all_days)
 
 saveWorkbook(wb, paste0("Forecast uk - ",pred_date,".xlsx"), overwrite = T) 
 
+#File Formatting for Slowing Trending ----------------------------------------------------------------------------------------------------
 temp <- pred_df_holt_damp_beta[,1:33]
 colnames(temp)[6] <- ""
 colnames(temp)[23] <- ""
@@ -796,11 +818,12 @@ write_db$pred_at <- as.character(Sys.Date())
 write_db$region <- "uk"
 write_db$model <- "Holt"
 
-write_db <- write_db[,c(33,34,1,32,27:29,22,23,25,26,30,31)]
+write_db <- write_db[,c(34,35,1,33,27:29,22,23,25,26,30,31,32)]
 
 colnames(write_db) <- c("region","model","asin","pred_at","Amz_inv","DK_inv", "Total_inventory", 
                         "Forecast_12w", "Adjusted_forecast_12w", "Weeks_on_hand", "Weeks_on_hand_AMZ",
-                        "Inv_issue","reprint_date")
+                        "Inv_issue","reprint_date","reprint_quantity")
+
 
 for (i in 5:9){
   write_db[,i] <- as.integer(write_db[,i])
@@ -809,12 +832,14 @@ for (i in 5:9){
 }
 
 write_db[is.na(write_db$reprint_date),13] <- "2020-01-01"
+write_db$reprint_quantity <- as.character(write_db$reprint_quantity)
+write_db$reprint_quantity[is.na(write_db$reprint_quantity)] <- "NaN"
 
 write.csv(write_db, "Q1 Forecast uk.csv", row.names = FALSE, quote = FALSE)
 
 
 #File Formatting for Blacklist titles ----------------------------------------------------------------------------------------------
-
+pred_df_holt_damp_beta$`Reprint Qty` <- NULL
 saveRDS(pred_df_holt_damp_beta, "pred_df_holt_damp_beta_UK.rds")
 
 

@@ -84,7 +84,7 @@ def connect():
 
         cur.copy_expert("""
         COPY experiment.forecasting_statistics_temp(region, model, asin, pred_at, "Amz_inv", "DK_inv", "Total_inventory", "Forecast_12w", 
-        "Adjusted_forecast_12w", "Weeks_on_hand", "Weeks_on_hand_AMZ", "Inv_issue","reprint_date")
+        "Adjusted_forecast_12w", "Weeks_on_hand", "Weeks_on_hand_AMZ", "Inv_issue","reprint_date","reprint_quantity")
         FROM STDIN WITH CSV HEADER DELIMITER as ','
         """, file
         )

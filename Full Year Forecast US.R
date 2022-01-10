@@ -36,19 +36,22 @@ Reprint <- Reprint[,c(grep("ASIN", colnames(Reprint)),
                       grep("Amazon.Net.Inventory..Sellable.On.Hand.Units.", colnames(Reprint)), 
                       grep("DK.Net.Inventory", colnames(Reprint)), 
                       grep("DK.Reprint.Date", colnames(Reprint)),
-                      grep("Open.Purchase.Order.Quantity", colnames(Reprint)))]
+                      grep("Open.Purchase.Order.Quantity", colnames(Reprint)),
+                      grep("DK.Reprint.Quantity", colnames(Reprint)) )]
 
 Reprint$DK.Reprint.Date <- as.Date(Reprint$DK.Reprint.Date, format = "%d/%m/%Y")
-colnames(Reprint) <- c("asin","title","Amz inv", "TBS inv", "Reprint.Date","AMZ Open Orders")
+colnames(Reprint) <- c("asin","title","Amz inv", "TBS inv", "Reprint.Date","AMZ Open Orders","Reprint Qty")
 
 #Adding 2 weeks for reprint delivery time and matching with closest saturday
 all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
 Reprint$Reprint.Date <- Reprint$Reprint.Date + 6 - match(weekdays(Reprint$Reprint.Date), all_days)
-Reprint$Reprint.Date <- Reprint$Reprint.Date + 7
 
 Reprint$`Amz inv` <- suppressWarnings(as.numeric(gsub(",","",Reprint$`Amz inv`)))
 Reprint$`TBS inv` <- suppressWarnings(as.numeric(gsub(",","",Reprint$`TBS inv`)))
 Reprint$`AMZ Open Orders` <- suppressWarnings(as.numeric(gsub(",","",Reprint$`AMZ Open Orders`)))
+Reprint$`Reprint Qty` <- suppressWarnings(as.numeric(gsub(",","",Reprint$`Reprint Qty`)))
+
+Reprint$`Reprint Qty`[is.na(Reprint$`Reprint Qty`)] <- NaN
 
 
 
@@ -168,12 +171,12 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% Q_iso$asin, ]
-prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-03-27", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-04-10", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 67 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol = 69 , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
@@ -317,12 +320,12 @@ pred_df_holt_damp_beta <- arrange(pred_df_holt_damp_beta, desc(pred_df_holt_damp
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% pred_df_holt_damp_beta[1:55,1], ]
-prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-03-27", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-04-10", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 67 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol = 69 , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
@@ -525,7 +528,6 @@ DF <- merge(DF, Print_status, by = "isbn", all.x = TRUE)
 
 pred_df_holt_damp_beta <- DF
 
-
 #-----------------------------------------------------------------------------------------------------------------------
 #                                 Cleaning and re-ordering
 #-----------------------------------------------------------------------------------------------------------------------
@@ -570,11 +572,16 @@ pred_df_holt_damp_beta <- arrange(pred_df_holt_damp_beta, desc(pred_df_holt_damp
 
 pred_df_holt_damp_beta$Publication <- as.Date(pred_df_holt_damp_beta$Publication)
 
-#re-ordering columns
-pred_df_holt_damp_beta <- pred_df_holt_damp_beta[,c(2,1,3:22,24:27,34,33,35,29,30:32,36,37)]
+pred_df_holt_damp_beta$`Reprint Qty`[is.na(pred_df_holt_damp_beta$`Reprint Qty`)] <- NaN
 
-forecasting_statistics_temp <- pred_df_holt_damp_beta[,c(1:22,35,34,31,33,23,24,29,30,25)]
-pred_df_holt_damp_beta <- pred_df_holt_damp_beta[,c(1:22,35,34,31,33,23,24,29,30,25,27,28,26)]
+pred_df_holt_damp_beta <- pred_df_holt_damp_beta %>%
+  relocate(`Reprint Qty`, .after = `12w_inventory_adjusted`)
+
+#re-ordering columns
+pred_df_holt_damp_beta <- pred_df_holt_damp_beta[,c(2,1,3:22,24:27,34,33,35,29,30:32,36,37,38)]
+
+forecasting_statistics_temp <- pred_df_holt_damp_beta[,c(1:22,35,34,31,33,23,24,29,30,25,36)]
+pred_df_holt_damp_beta <- pred_df_holt_damp_beta[,c(1:22,35,34,31,33,23,24,29,30,25,27,28,26,36)]
 
 Hitlist_titles <- c("0744036720","1465449817","0744020530","1465453237","1465436030","0744020565","1465474765",
                     "146546848X","1465463305","146544968X","074402997X","1465475850","1465437975","0744035015",
@@ -604,6 +611,8 @@ colnames(pred_df_holt_damp_beta)[34] <- ""
 
 pred_df_holt_damp_beta$isbn <- as.character(pred_df_holt_damp_beta$isbn)
 pred_df_holt_damp_beta$asin <- as.character(pred_df_holt_damp_beta$asin)
+
+
 
 #Creating borders function 
 OutsideBorders <-
@@ -736,11 +745,12 @@ invisible(OutsideBorders(
   rows_ = 1:nrow(pred_df_holt_damp_beta),
   cols_ = 30:33
 ))
+
 invisible(OutsideBorders(
   wb,
   sheet_ = "US",
   rows_ = 1:nrow(pred_df_holt_damp_beta),
-  cols_ = 35:38
+  cols_ = 35:39
 ))
 
 freezePane(
@@ -754,15 +764,16 @@ pred_date <- Sys.Date() + 6 - match(weekdays(Sys.Date()), all_days)
 
 saveWorkbook(wb, paste0("Forecast us - ",pred_date,".xlsx"), overwrite = T) 
 
-temp <- pred_df_holt_damp_beta[,1:33]
-colnames(temp)[6] <- ""
-colnames(temp)[23] <- ""
-colnames(temp)[29] <- ""
+#Slowing Trending Save  ----------------------------------------------------------------------------------------------------
+temp <- pred_df_holt_damp_beta[,1:33]                                           
+colnames(temp)[6] <- ""                                                         
+colnames(temp)[23] <- ""                                                        
+colnames(temp)[29] <- ""                                                        
+                                                                                
+write.csv(temp, paste0("Forecast us - ",pred_date,".csv"), row.names = F)       
 
-write.csv(temp, paste0("Forecast us - ",pred_date,".csv"), row.names = F)
 
 cat("\n\nUS Forecasts saved succesfully\n")
-
 
 
 #File Formatting for DB write ----------------------------------------------------------------------------------------------
@@ -784,23 +795,21 @@ write.csv(pred_formatted, "Q1 Forecast us - Formatted.csv",row.names = F, quote 
 cat("US Forecasts formatted succesfully\n")
 
 
-
 #File Formatting for DB write ----------------------------------------------------------------------------------------------
 write_db <- forecasting_statistics_temp 
 
 
-
 write_db$pred_at <- as.character(Sys.Date())
-write_db$region <- as.character("us")
-write_db$model <- as.character('Holt')
+write_db$region <- "us"
+write_db$model <- "Holt"
 
 
-write_db <- write_db[,c(33,34,1,32,27:29,22,23,25,26,30,31)]
+write_db <- write_db[,c(34,35,1,33,27:29,22,23,25,26,30,31,32)]
 
 
 colnames(write_db) <- c("region","model","asin","pred_at","Amz_inv","DK_inv", "Total_inventory", 
                               "Forecast_12w", "Adjusted_forecast_12w", "Weeks_on_hand", "Weeks_on_hand_AMZ",
-                              "Inv_issue","reprint_date")
+                              "Inv_issue","reprint_date","reprint_quantity")
 
 for (i in 5:9){
   write_db[,i] <- as.integer(write_db[,i])
@@ -809,12 +818,14 @@ for (i in 5:9){
 }
 
 write_db[is.na(write_db$reprint_date),13] <- "2020-01-01"
+write_db$reprint_quantity <- as.character(write_db$reprint_quantity)
+write_db$reprint_quantity[is.na(write_db$reprint_quantity)] <- "NaN"
 
 write.csv(write_db, "Q1 Forecast us.csv",row.names = FALSE, quote = FALSE)
 
-
+View(write_db)
 
 #File Formatting for Blacklist titles ----------------------------------------------------------------------------------------------
-
+pred_df_holt_damp_beta$`Reprint Qty` <- NULL
 saveRDS(pred_df_holt_damp_beta, "pred_df_holt_damp_beta_US.rds")
 
