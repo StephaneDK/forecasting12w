@@ -101,8 +101,7 @@ Q1 <- arrange(Q1, desc( Q1[,grep(Sat_date,colnames(Q1))]) )
 
 Q_iso <- readRDS("Q_iso_UK.csv")
 
-#Q_iso <- rbind.data.frame(Q_iso, c("0241459001","9780241459003","Baby's First Easter","Q2")  )
-
+View(Q_iso)
 
 #Creating computational statistics ---------------------------------------------------------------------------------------------------
 
@@ -155,7 +154,8 @@ for (i in 1:ncol(pred_df_holt_damp_beta)){
 }
 
 
-#Adjusting for predictions with big negative slopes
+#Adjusting for predictions with big negative slopes ----------------------------
+
 for (i in 1:nrow(pred_df_holt_damp_beta)){
   
   if (round(as.numeric(lm(as.numeric(pred_df_holt_damp_beta[i,c(6:9)]) ~ c(1:4))$coefficients[2]),1) <= -5){
@@ -179,7 +179,6 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
 #-----------------------------------------------------------------------------------------------------------------------
 #                                 Seasonal titles adjustment
 #-----------------------------------------------------------------------------------------------------------------------
-
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% Q_iso$asin, ]
