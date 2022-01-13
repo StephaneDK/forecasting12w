@@ -20,7 +20,7 @@ options(scipen=999, digits = 3, error=function() { traceback(2); if(!interactive
 
 
 `%notin%` <- Negate(`%in%`)
-current_quarter <- "Q4"
+current_quarter <- "Q1"
 
 #Setting the directory where all files will be used from for this project
 setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
@@ -171,12 +171,12 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% Q_iso$asin, ]
-prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-04-10", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-01-01", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 69 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol = 55 , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
@@ -238,8 +238,9 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
 
 
 
-#Category Adjustment -----------------------------------------------------------------------------------------------------------------
-
+#-----------------------------------------------------------------------------------------------------------------------
+#                                 Category Adjustment 
+#-----------------------------------------------------------------------------------------------------------------------
 
 
 #Last 7 weeks of travel books are increased by 20%
@@ -314,18 +315,21 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
 pred_original <- pred_df_holt_damp_beta
 
 
-#Title level adjustment for top 55 titles --------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
+#                                 Title level adjustment for top 55 titles
+#-----------------------------------------------------------------------------------------------------------------------
+
 
 pred_df_holt_damp_beta <- arrange(pred_df_holt_damp_beta, desc(pred_df_holt_damp_beta[,9]) )
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% pred_df_holt_damp_beta[1:55,1], ]
-prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-04-10", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-01-01", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 69 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol = 55 , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
@@ -367,7 +371,7 @@ for (i in 1:nrow(temp)){
   
   if (temp$asin[i] %in% Seas_adjQ$asin && temp$Publication[i] <= '2020-09-10' && 
       temp$asin[i] %notin% c("146540855X","1465488820","1465448667","1465468137",
-                             "1465479368","1465499334","1465451439")){
+                             "1465479368","1465499334","1465451439","1465476679")){
     
     for (j in 10:21){
       
@@ -377,7 +381,6 @@ for (i in 1:nrow(temp)){
     }
   }
 }
-
 
 pred_original <- pred_df_holt_damp_beta
 
@@ -822,8 +825,6 @@ write_db$reprint_quantity <- as.character(write_db$reprint_quantity)
 write_db$reprint_quantity[is.na(write_db$reprint_quantity)] <- "NaN"
 
 write.csv(write_db, "Q1 Forecast us.csv",row.names = FALSE, quote = FALSE)
-
-View(write_db)
 
 #File Formatting for Blacklist titles ----------------------------------------------------------------------------------------------
 pred_df_holt_damp_beta$`Reprint Qty` <- NULL
