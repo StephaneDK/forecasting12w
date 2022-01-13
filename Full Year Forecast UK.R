@@ -101,8 +101,6 @@ Q1 <- arrange(Q1, desc( Q1[,grep(Sat_date,colnames(Q1))]) )
 
 Q_iso <- readRDS("Q_iso_UK.csv")
 
-View(Q_iso)
-
 #Creating computational statistics ---------------------------------------------------------------------------------------------------
 
 #Time Vectors
@@ -380,8 +378,6 @@ Seas_adjQ[,3:ncol(Seas_adjQ)] <- round(Seas_adjQ[,3:ncol(Seas_adjQ)],3)
 Seas_adjQ <- arrange(Seas_adjQ, desc(Seas_adjQ$asin))
 temp <- arrange(pred_df_holt_damp_beta[1:20,], desc(pred_df_holt_damp_beta[1:20,1]) )
 
-View(Seas_adjQ)
-View(temp)
 
 #Seasonal adjustment loop
 for (i in 1:nrow(temp)){
