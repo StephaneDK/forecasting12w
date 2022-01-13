@@ -19,7 +19,7 @@ options(scipen=999, digits = 3, error=function() { traceback(2); if(!interactive
 all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
 
 `%notin%` <- Negate(`%in%`)
-current_quarter <- "Q3"
+current_quarter <- "Q1"
 
 #Setting the directory where all files will be used from for this project
 setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
@@ -183,12 +183,12 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% Q_iso$asin, ]
-prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-04-10", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-01-01", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 69 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol = 55 , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
@@ -220,10 +220,10 @@ Seas_adjQ[Seas_adjQ == Inf] <- 1
 #Re-organise
 
 #manual adjustment on existing seasonal titles
-Seas_adjQ[Seas_adjQ$asin == "0241377978",3:16]  <- c( 1, 1.6, 1, 1.5, 1.2, 1.2, 1.5, 0.27, 0.44, 0.75, 0.66, 1, 1, 1 )
+#Seas_adjQ[Seas_adjQ$asin == "0241377978",3:16]  <- c( 1, 1.6, 1, 1.5, 1.2, 1.2, 1.5, 0.27, 0.44, 0.75, 0.66, 1, 1, 1 )
 
 #manual adjustment on existing seasonal titles
-Seas_adjQ[Seas_adjQ$asin == "0241283477",3:16]  <- c(1, 0.76, 0.83, 1.2, 1.65, 1.18, 1.60, 0.18,  0.99, 0.96, 1.02, 1.38, 1.02, 1.47) 
+#Seas_adjQ[Seas_adjQ$asin == "0241283477",3:16]  <- c(1, 0.76, 0.83, 1.2, 1.65, 1.18, 1.60, 0.18,  0.99, 0.96, 1.02, 1.38, 1.02, 1.47) 
 
 #Rounding to 3 decimal places
 Seas_adjQ[,3:ncol(Seas_adjQ)] <- round(Seas_adjQ[,3:ncol(Seas_adjQ)],3)
@@ -249,7 +249,6 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
     }
   }
 }
-
 
 
 #Category Adjustment -----------------------------------------------------------------------------------------------------------------
@@ -332,18 +331,22 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
 
 
 
-#Title level adjustment for top 20 titles --------------------------------------
+
+#-----------------------------------------------------------------------------------------------------------------------
+#                                 Title level adjustment for top 20 titles
+#-----------------------------------------------------------------------------------------------------------------------
+
 
 pred_df_holt_damp_beta <- arrange(pred_df_holt_damp_beta, desc(pred_df_holt_damp_beta[,9]) )
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% pred_df_holt_damp_beta[1:20,1], ]
-prev_year <- prev_year[,c(1,3,grep("2020-01-04", colnames(Q1)): grep("2021-04-10", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-01-01", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 69 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol = 55 , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
@@ -378,12 +381,14 @@ Seas_adjQ[,3:ncol(Seas_adjQ)] <- round(Seas_adjQ[,3:ncol(Seas_adjQ)],3)
 Seas_adjQ <- arrange(Seas_adjQ, desc(Seas_adjQ$asin))
 temp <- arrange(pred_df_holt_damp_beta[1:20,], desc(pred_df_holt_damp_beta[1:20,1]) )
 
+View(Seas_adjQ)
+View(temp)
 
 #Seasonal adjustment loop
 for (i in 1:nrow(temp)){
   
-  if (temp$asin[i] %in% Seas_adjQ$asin && temp$Publication[i] <= '2020-09-10' && 
-      temp$asin[i] %notin% c("1409366553","1405393505","0241455154","0241352487","0241287936")){
+  if (temp$asin[i] %in% Seas_adjQ$asin && temp$Publication[i] <= '2020-09-10' &&  
+      temp$asin[i] %notin% c("1409366553","1405393505","0241455154","0241287936","0241312817")){ #Manual exclusion for title with big volume difference
     
     for (j in 10:21){
       

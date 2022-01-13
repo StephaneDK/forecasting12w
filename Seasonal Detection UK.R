@@ -199,6 +199,8 @@ Q_iso <- rbind.data.frame(Q1_iso[,c(1:3, grep("Season", colnames(Q1_iso)) )],
 Q_iso <- rbind.data.frame(Q_iso, c("0241283477","9780241283479","Baby Touch and Feel I Love You","Q1")  )
 Q_iso <- rbind.data.frame(Q_iso, c("140536288X","9781405362887","Pop-Up Peekaboo! Farm","Q2")  )
 Q_iso <- rbind.data.frame(Q_iso, c("0241459001","9780241459003","Baby's First Easter","Q2")  )
+Q_iso <- rbind.data.frame(Q_iso, c("1409345610","9781409345619","Kama Sutra A Position A Day","Q1")  )
+Q_iso <- rbind.data.frame(Q_iso, c("0241459001","9780241459003","Baby's First Easter","Q2")  )
 
 
 saveRDS(Q_iso, "Q_iso_UK.csv")
