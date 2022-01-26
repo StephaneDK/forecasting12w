@@ -1,20 +1,29 @@
-library.path <- .libPaths("C:/Users/steph/Documents/R/win-library/4.0")
+library.path <- .libPaths("C:/Users/Stephane/Documents/R/win-library/4.0")
 
-cat("Forecast start\n")
+cat("\nForecast start\n")
 
 
-suppressMessages(library(tidyverse, lib.loc = library.path))
-suppressMessages(library(stringr, lib.loc = library.path))
-suppressMessages(library(reshape2, lib.loc = library.path))
-suppressMessages(library(ggthemes, lib.loc = library.path))
-suppressMessages(library(gridExtra, lib.loc = library.path))
-suppressMessages(library(forecast, lib.loc = library.path))
-suppressMessages(library(aTSA, lib.loc = library.path))
-suppressMessages(library(DescTools, lib.loc = library.path))
-suppressMessages(library(plyr, lib.loc = library.path))
-suppressMessages(library(EnvStats, lib.loc = library.path))
-suppressMessages(library(qcc, lib.loc = library.path))
-suppressMessages(library(openxlsx, lib.loc = library.path))
+oldw <- getOption("warn")
+options(warn = -1)
+
+suppressMessages({
+  
+  library(tidyverse, lib.loc = library.path)
+  library(stringr, lib.loc = library.path)
+  library(reshape2, lib.loc = library.path)
+  library(ggthemes, lib.loc = library.path)
+  library(gridExtra, lib.loc = library.path)
+  library(forecast, lib.loc = library.path)
+  library(aTSA, lib.loc = library.path)
+  library(DescTools, lib.loc = library.path)
+  library(plyr, lib.loc = library.path)
+  library(EnvStats, lib.loc = library.path)
+  library(qcc, lib.loc = library.path)
+  library(openxlsx, lib.loc = library.path)
+  library(magrittr, lib.loc = library.path)
+})
+
+options(warn = oldw)
 
 options(scipen=999, digits = 3, error=function() { traceback(2); if(!interactive()) quit("no", status = 1, runLast = FALSE) } )
 
@@ -23,7 +32,7 @@ options(scipen=999, digits = 3, error=function() { traceback(2); if(!interactive
 current_quarter <- "Q1"
 
 #Setting the directory where all files will be used from for this project
-setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
+setwd("C:\\Users\\Stephane\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
 
 #Importing Data
 Sales_US <- read.csv("Sales US.csv", header = T, stringsAsFactors = FALSE)

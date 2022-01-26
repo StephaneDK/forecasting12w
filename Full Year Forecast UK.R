@@ -1,19 +1,28 @@
-library.path <- .libPaths("C:/Users/steph/Documents/R/win-library/4.0")
-cat("Forecast start\n")
+library.path <- .libPaths("C:/Users/Stephane/Documents/R/win-library/4.0")
+cat("\nForecast start\n")
 
-suppressMessages(library(tidyverse, lib.loc = library.path))
-suppressMessages(library(stringr, lib.loc = library.path))
-suppressMessages(library(reshape2, lib.loc = library.path))
-suppressMessages(library(ggthemes, lib.loc = library.path))
-suppressMessages(library(gridExtra, lib.loc = library.path))
-suppressMessages(library(forecast, lib.loc = library.path))
-suppressMessages(library(aTSA, lib.loc = library.path))
-suppressMessages(library(DescTools, lib.loc = library.path))
-suppressMessages(library(plyr, lib.loc = library.path))
-suppressMessages(library(EnvStats, lib.loc = library.path))
-suppressMessages(library(qcc, lib.loc = library.path))
-suppressMessages(library(openxlsx, lib.loc = library.path))
-suppressMessages(library(magrittr, lib.loc = library.path))
+oldw <- getOption("warn")
+options(warn = -1)
+
+suppressMessages({
+  
+library(tidyverse, lib.loc = library.path)
+library(stringr, lib.loc = library.path)
+library(reshape2, lib.loc = library.path)
+library(ggthemes, lib.loc = library.path)
+library(gridExtra, lib.loc = library.path)
+library(forecast, lib.loc = library.path)
+library(aTSA, lib.loc = library.path)
+library(DescTools, lib.loc = library.path)
+library(plyr, lib.loc = library.path)
+library(EnvStats, lib.loc = library.path)
+library(qcc, lib.loc = library.path)
+library(openxlsx, lib.loc = library.path)
+library(magrittr, lib.loc = library.path)
+  
+})
+
+options(warn = oldw)
 
 options(scipen=999, digits = 3, error=function() { traceback(2); if(!interactive()) quit("no", status = 1, runLast = FALSE) } )
 all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
@@ -22,14 +31,16 @@ all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sun
 current_quarter <- "Q1"
 
 #Setting the directory where all files will be used from for this project
-setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
+setwd("C:\\Users\\Stephane\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
 
 #Importing Sales Data
 Sales_UK <- read.csv("Sales uk.csv", header = T, stringsAsFactors = FALSE)
 Sales_UK <- Sales_UK %>% 
-            mutate(date = as.Date(Sales_UK$date)) %>% 
-            subset(title != "")
-
+            subset(title != "") %>% 
+            mutate(date = as.Date(date),
+                   asin = case_when(nchar(asin) == 9 ~ paste0("0",asin),
+                                    TRUE ~ asin)
+                   )
 
 #Importing Reprint and AA Data
 Reprint <- read.csv("UK Inventory.csv", header = T, stringsAsFactors = FALSE)
@@ -51,36 +62,14 @@ Reprint <- Reprint %>%
                           "Print Status",
                           "AA Status",
                           "Reprint Qty"))  %>%
-           mutate(Reprint.Date = as.Date(Reprint$Reprint.Date, format = "%d/%m/%Y"),
+           mutate(Reprint.Date = as.Date(Reprint$Reprint.Date, format = "%m/%d/%Y"),
                   `Amz inv` =  suppressWarnings(as.numeric(gsub(",","",`Amz inv`))),
                   `TBS inv` =  suppressWarnings(as.numeric(gsub(",","",`TBS inv`))),
                   `AMZ Open Orders` =  suppressWarnings(as.numeric(gsub(",","",`AMZ Open Orders`))),
-                  `Reprint Qty` = replace(`Reprint Qty`, is.na(`Reprint Qty`), NaN)
-                  )
-
-
-#Matching reprint delivery date with closest Saturday
-Reprint$Reprint.Date <- Reprint$Reprint.Date + 6 - match(weekdays(Reprint$Reprint.Date), all_days)
-
-for (i in 1:length(Sales_UK$asin)){
-  if (nchar(Sales_UK$asin[i]) == 9){
-    Sales_UK$asin[i] <- paste0("0",Sales_UK$asin[i])  
-  }
-  
-}
-
-
-
-for (i in 1:length(Reprint$asin)){
-  if (nchar(Reprint$asin[i]) == 9){
-    Reprint$asin[i] <- paste0("0",Reprint$asin[i])  
-  }
-  
-}
-
-
-
-
+                  `Reprint Qty` = replace(`Reprint Qty`, is.na(`Reprint Qty`), NaN),
+                  asin = case_when(nchar(asin) == 9 ~ paste0("0",asin),TRUE ~ asin)
+                  )  %>%
+           mutate(Reprint.Date = Reprint.Date + 6 - match(weekdays(Reprint.Date), all_days))
 
 
 #Creating the Data Frame with all sales data ------------------------------------------------------------------------------------

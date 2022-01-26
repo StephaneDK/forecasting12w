@@ -10,7 +10,7 @@ import os
 import sys
 
 
-os.chdir('C:\\Users\\Steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
+os.chdir('C:\\Users\\Stephane\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
 
 
 country_var = sys.argv[1]
@@ -68,7 +68,7 @@ def connect():
         print(db_version, ' \n\n ')
         
         #Copying csv file to forecasting_temp
-        file = open("C:\\Users\\Steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv\\Q1 Forecast {0} - Formatted.csv".format(country_var))
+        file = open("C:\\Users\\Stephane\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv\\Q1 Forecast {0} - Formatted.csv".format(country_var))
 
         cur.copy_expert("""
         COPY experiment.forecasting_temp(region, model, asin, pred_at, pred_for, pred_units)
@@ -80,7 +80,7 @@ def connect():
 
 
         #Copying csv file to forecasting_statistics_temp
-        file = open("C:\\Users\\Steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv\\Q1 Forecast {0}.csv".format(country_var))
+        file = open("C:\\Users\\Stephane\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv\\Q1 Forecast {0}.csv".format(country_var))
 
         cur.copy_expert("""
         COPY experiment.forecasting_statistics_temp(region, model, asin, pred_at, "Amz_inv", "DK_inv", "Total_inventory", "Forecast_12w", 

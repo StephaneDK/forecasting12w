@@ -11,7 +11,7 @@ import sys
 
 country_var = sys.argv[1]
 
-os.chdir('C:\\Users\\Steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
+os.chdir('C:\\Users\\Stephane\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
 
 class LatestDataCheck(Exception):
     pass
@@ -67,6 +67,8 @@ def connect():
         #execute a statement
         print('PostgreSQL database version:')
         cur.execute('SELECT version()')
+
+        print('\nRetrieving data for forecasting')
 
         # display the PostgreSQL database server version
         db_version = cur.fetchone()
@@ -221,7 +223,8 @@ def connect():
     finally:
         if conn is not None:
             conn.close()
-            print('Database connection closed')
+            print('Forecasting data retrieved succesfully/n')
+            print('Database connection closed/n')
 
 if __name__ == '__main__':
     connect()
