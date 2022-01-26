@@ -1,6 +1,8 @@
 library.path <- .libPaths("C:/Users/Stephane/Documents/R/win-library/4.0")
 cat("Blacklist start\n")
 
+print("Hello 123")
+
 oldw <- getOption("warn")
 options(warn = -1)
 
