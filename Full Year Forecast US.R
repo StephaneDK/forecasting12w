@@ -26,7 +26,7 @@ suppressMessages({
 options(warn = oldw)
 
 options(scipen=999, digits = 3, error=function() { traceback(2); if(!interactive()) quit("no", status = 1, runLast = FALSE) } )
-
+all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
 
 `%notin%` <- Negate(`%in%`)
 current_quarter <- "Q1"
@@ -34,74 +34,55 @@ current_quarter <- "Q1"
 #Setting the directory where all files will be used from for this project
 setwd("C:\\Users\\Stephane\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
 
-#Importing Data
+#Importing and clean Sales Data
 Sales_US <- read.csv("Sales US.csv", header = T, stringsAsFactors = FALSE)
-Sales_US$date <- as.Date(Sales_US$date, format="%Y-%m-%d")
-Sales_US <- Sales_US[Sales_US$title != "",]
+Sales_US <- Sales_US %>% 
+  subset(title != "") %>% 
+  mutate(date = as.Date(date),
+         asin = case_when(nchar(asin) == 9 ~ paste0("0",asin),
+                          TRUE ~ asin)
+  ) %>%
+  select(date, asin, isbn, title, division, pub_date, units) %>%
+  set_colnames(c("date","asin","isbn","title","Division","Publication","units")) %>%
+  dcast(asin + isbn + title + Division + Publication ~ date, value.var="units", fun.aggregate = sum) %>%
+  arrange(desc(.[ncol(.)]))
 
+Q1 <- Sales_US
+
+#Importing and clean Reprint Data
 Reprint <- read.csv("US Inventory.csv", header = T, stringsAsFactors = FALSE)
-Reprint <- Reprint[,c(grep("ASIN", colnames(Reprint)), 
-                      grep("Product.Title", colnames(Reprint)), 
-                      grep("Amazon.Net.Inventory..Sellable.On.Hand.Units.", colnames(Reprint)), 
-                      grep("DK.Net.Inventory", colnames(Reprint)), 
-                      grep("DK.Reprint.Date", colnames(Reprint)),
-                      grep("Open.Purchase.Order.Quantity", colnames(Reprint)),
-                      grep("DK.Reprint.Quantity", colnames(Reprint)) )]
+Reprint <- Reprint %>%
+  select(ASIN, 
+         Product.Title,
+         Amazon.Net.Inventory..Sellable.On.Hand.Units.,
+         DK.Net.Inventory, 
+         DK.Reprint.Date, 
+         Open.Purchase.Order.Quantity, 
+         DK.Reprint.Quantity 
+  ) %>%
+  set_colnames(c("asin",
+                 "title",
+                 "Amz inv", 
+                 "TBS inv",  
+                 "Reprint.Date", 
+                 "AMZ Open Orders", 
+                 "Reprint Qty"))  %>%
+  mutate(Reprint.Date = as.Date(Reprint.Date, format = "%d/%m/%Y"),
+         `Amz inv` =  suppressWarnings(as.numeric(gsub(",","",`Amz inv`))),
+         `TBS inv` =  suppressWarnings(as.numeric(gsub(",","",`TBS inv`))),
+         `Reprint Qty` =  suppressWarnings(as.numeric(gsub(",","",`Reprint Qty`))),
+         `AMZ Open Orders` =  suppressWarnings(as.numeric(gsub(",","",`AMZ Open Orders`))),
+         `Reprint Qty` = replace(`Reprint Qty`, is.na(`Reprint Qty`), NaN),
+         asin = case_when(nchar(asin) == 9 ~ paste0("0",asin),TRUE ~ asin)
+  ) %>%
+  mutate(Reprint.Date = Reprint.Date + 6 - match(weekdays(Reprint.Date), all_days))
 
-Reprint$DK.Reprint.Date <- as.Date(Reprint$DK.Reprint.Date, format = "%d/%m/%Y")
-colnames(Reprint) <- c("asin","title","Amz inv", "TBS inv", "Reprint.Date","AMZ Open Orders","Reprint Qty")
-
-#Adding 2 weeks for reprint delivery time and matching with closest saturday
-all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
-Reprint$Reprint.Date <- Reprint$Reprint.Date + 6 - match(weekdays(Reprint$Reprint.Date), all_days)
-
-Reprint$`Amz inv` <- suppressWarnings(as.numeric(gsub(",","",Reprint$`Amz inv`)))
-Reprint$`TBS inv` <- suppressWarnings(as.numeric(gsub(",","",Reprint$`TBS inv`)))
-Reprint$`AMZ Open Orders` <- suppressWarnings(as.numeric(gsub(",","",Reprint$`AMZ Open Orders`)))
-Reprint$`Reprint Qty` <- suppressWarnings(as.numeric(gsub(",","",Reprint$`Reprint Qty`)))
-
-Reprint$`Reprint Qty`[is.na(Reprint$`Reprint Qty`)] <- NaN
-
-
-
-for (i in 1:length(Sales_US$asin)){
-  if (nchar(Sales_US$asin[i]) == 9){
-    Sales_US$asin[i] <- paste0("0",Sales_US$asin[i])  
-  }
-  
-}
-
-
-
-for (i in 1:length(Reprint$asin)){
-  if (nchar(Reprint$asin[i]) == 9){
-    Reprint$asin[i] <- paste0("0",Reprint$asin[i])  
-  }
-  
-}
-
-
-
-
-
+#Import AA Data
 AA_status <-  read.csv("AA Status US.csv", header = T, stringsAsFactors = FALSE)
 colnames(AA_status) <- c("asin", "AA_status")
 
 Print_status <-  read.csv("Print Status US.csv", header = T, stringsAsFactors = FALSE)
 colnames(Print_status) <- c( "Print_status", "isbn")
-
-
-#Creating the Data Frame with all sales data ------------------------------------------------------------------------------------
-DF <- cbind.data.frame(Sales_US$date, Sales_US$asin, Sales_US$isbn, Sales_US$title,Sales_US$division ,Sales_US$pub_date,Sales_US$units ,stringsAsFactors = FALSE)
-colnames(DF) <- c("date","asin","isbn","title","Division","Publication","units")
-
-#Rearrange data with dates as columns
-Q1 <- dcast(DF, asin + isbn + title + Division + Publication ~ date, value.var="units", fun.aggregate = sum)
-
-#Re-organising by latest saturday
-all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
-Sat_date <- Sys.Date() -1 - match(weekdays(Sys.Date()), all_days)
-Q1 <- arrange(Q1, desc( Q1[,grep(Sat_date,colnames(Q1))]) )
 
 
 #Import Seasonal titles ---------------------------------------------------------------------------------------------------
@@ -441,7 +422,7 @@ for ( i in 1:nrow(DF)){
 }
 
 #One variable for amazon and tbs inventory
-DF$inventory <- DF$`Amz inv` + DF$`TBS inv` + DF$`AMZ Open Orders`
+DF$inventory <- DF$`Amz inv` + DF$`TBS inv` #+ DF$`AMZ Open Orders`
 DF$Inv.issue <- 0
 DF$WOH <- "12+"
 
@@ -563,8 +544,7 @@ for ( i in 1:nrow(pred_df_holt_damp_beta)){
 }
 
 #Adding inventory info
-pred_df_holt_damp_beta$Inventory <- pred_df_holt_damp_beta$`Amz inv` + pred_df_holt_damp_beta$`TBS inv` +
-                                    pred_df_holt_damp_beta$`AMZ Open Orders`
+pred_df_holt_damp_beta$Inventory <- pred_df_holt_damp_beta$`Amz inv` + pred_df_holt_damp_beta$`TBS inv` #+ pred_df_holt_damp_beta$`AMZ Open Orders`
 
 
 #Computing slope

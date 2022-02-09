@@ -33,16 +33,22 @@ current_quarter <- "Q1"
 #Setting the directory where all files will be used from for this project
 setwd("C:\\Users\\Stephane\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
 
-#Importing Sales Data
+#Importing and clean Sales Data
 Sales_UK <- read.csv("Sales uk.csv", header = T, stringsAsFactors = FALSE)
 Sales_UK <- Sales_UK %>% 
             subset(title != "") %>% 
             mutate(date = as.Date(date),
                    asin = case_when(nchar(asin) == 9 ~ paste0("0",asin),
                                     TRUE ~ asin)
-                   )
+                   ) %>%
+  select(date, asin, isbn, title, division, pub_date, units) %>%
+  set_colnames(c("date","asin","isbn","title","Division","Publication","units")) %>%
+  dcast(asin + isbn + title + Division + Publication ~ date, value.var="units", fun.aggregate = sum) %>%
+  arrange(desc(.[ncol(.)]))
 
-#Importing Reprint and AA Data
+Q1 <- Sales_UK
+
+#Importing and clean Reprint and AA Data
 Reprint <- read.csv("UK Inventory.csv", header = T, stringsAsFactors = FALSE)
 Reprint <- Reprint %>%
            select(ASIN, 
@@ -51,7 +57,7 @@ Reprint <- Reprint %>%
                   Reprint.Dates, 
                   Open.Purchase.Order.Quantity, 
                   B3.Status, 
-                  contains("Focus.List.Current.Status"),
+                  contains("Priority.Status"),#Focus.List.Current.Status
                   Reprint.Quantity 
                   ) %>%
            set_colnames(c("asin", 
@@ -62,9 +68,10 @@ Reprint <- Reprint %>%
                           "Print Status",
                           "AA Status",
                           "Reprint Qty"))  %>%
-           mutate(Reprint.Date = as.Date(Reprint$Reprint.Date, format = "%m/%d/%Y"),
+           mutate(Reprint.Date = as.Date(Reprint.Date, format = "%m/%d/%Y"),
                   `Amz inv` =  suppressWarnings(as.numeric(gsub(",","",`Amz inv`))),
                   `TBS inv` =  suppressWarnings(as.numeric(gsub(",","",`TBS inv`))),
+                  `Reprint Qty` =  suppressWarnings(as.numeric(gsub(",","",`Reprint Qty`))),
                   `AMZ Open Orders` =  suppressWarnings(as.numeric(gsub(",","",`AMZ Open Orders`))),
                   `Reprint Qty` = replace(`Reprint Qty`, is.na(`Reprint Qty`), NaN),
                   asin = case_when(nchar(asin) == 9 ~ paste0("0",asin),TRUE ~ asin)
@@ -72,21 +79,7 @@ Reprint <- Reprint %>%
            mutate(Reprint.Date = Reprint.Date + 6 - match(weekdays(Reprint.Date), all_days))
 
 
-#Creating the Data Frame with all sales data ------------------------------------------------------------------------------------
-DF <- cbind.data.frame(Sales_UK$date, Sales_UK$asin, Sales_UK$isbn, Sales_UK$title,Sales_UK$division ,Sales_UK$pub_date,Sales_UK$units ,stringsAsFactors = FALSE)
-colnames(DF) <- c("date","asin","isbn","title","Division","Publication","units")
-
-#Rearrange data with dates as columns
-Q1 <- dcast(DF, asin + isbn + title + Division + Publication ~ date, value.var="units", fun.aggregate = sum)
-
-#Re-organising by latest saturday
-all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
-Sat_date <- Sys.Date() -1 - match(weekdays(Sys.Date()), all_days)
-Q1 <- arrange(Q1, desc( Q1[,grep(Sat_date,colnames(Q1))]) )
-
-
-
-#Detection of seasonal titles --------------------------------------------------------------------------------------------------
+#Import seasonal titles --------------------------------------------------------------------------------------------------
 
 Q_iso <- readRDS("Q_iso_UK.csv")
 
