@@ -10,7 +10,7 @@ import os
 import sys
 
 
-os.chdir('C:\\Users\\Stephane\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
+os.chdir('C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
 
 
 country_var = sys.argv[1]
