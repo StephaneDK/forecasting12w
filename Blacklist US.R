@@ -50,118 +50,15 @@ for (i in 1:length(Scrape_US$asin)){
 }
 
 
-AMZ_Stock <- read.csv("AMZ Stock status.csv", header = T, stringsAsFactors = FALSE)
-
-AMZ_Stock <- AMZ_Stock %>% 
-  subset(country == "uk")  %>% 
-  select(isbn, days_oos, days_lowstock)
-
 Blacklist <- readRDS("pred_df_holt_damp_beta_US.rds")
 
-Blacklist <- suppressWarnings(merge(Blacklist, AMZ_Stock, by = "isbn", all.x = T))
 
 Blacklist <- Blacklist  %>%
-  mutate(days_oos = as.numeric(days_oos),
-         days_lowstock = as.numeric(days_lowstock),
-         l4w  = rowSums(.[7:10]) )
+  mutate(l4w  = rowSums(.[7:10]) )
 
 #-----------------------------------------------------------------------------------------------------------------------
 #                                 Save 1
 #-----------------------------------------------------------------------------------------------------------------------
-save1 <- Blacklist
-
-save1 <- save1[,c(1:6,24:41)]
-
-# Adds after the second column
-save1 <- add_column(save1, new_col = NA, .after = 21)
-
-colnames(save1)[6] <- ""
-colnames(save1)[12] <- ""
-colnames(save1)[17] <- ""
-colnames(save1)[22] <- ""
-
-
-#Highlighting columns with inventory issues
-wb <- createWorkbook()
-addWorksheet(wb, sheetName="UK")
-writeData(wb, sheet="UK", x=save1)
-
-
-#adding filters
-addFilter(wb, "UK", rows = 1, cols = 1:ncol(save1))
-
-#auto width for columns
-width_vec <- suppressWarnings(apply(save1, 2, function(x) max(nchar(as.character(x)) + 1, na.rm = TRUE)))
-width_vec_header <- nchar(colnames(save1))  + 3
-max_vec_header <- pmax(width_vec, width_vec_header)
-setColWidths(wb, "UK", cols = 1:ncol(save1), widths = max_vec_header )
-setColWidths(wb, "UK",  cols = 1, widths = 13)
-setColWidths(wb, "UK",  cols = 2, widths = 15)
-setColWidths(wb, "UK",  cols = 3, widths = 52)
-setColWidths(wb, "UK",  cols = 6, widths = 10)
-setColWidths(wb, "UK",  cols = 10, widths = 10)
-setColWidths(wb, "UK",  cols = 11, widths = 14)
-setColWidths(wb, "UK",  cols = 12, widths = 10)
-setColWidths(wb, "UK",  cols = 17, widths = 10)
-setColWidths(wb, "UK",  cols = 22, widths = 10)
-
-
-
-
-#Centering cells
-centerStyle <- createStyle(halign = "center")
-addStyle(wb, "UK", style=centerStyle, rows = 2:nrow(save1), cols = 7:ncol(save1), 
-         gridExpand = T, stack = TRUE)
-
-# Adding borders
-invisible(OutsideBorders(
-  wb,
-  sheet_ = "UK",
-  rows_ = 1:nrow(save1)+1,
-  cols_ = 1:5
-))
-
-invisible(OutsideBorders(
-  wb,
-  sheet_ = "UK",
-  rows_ = 1:nrow(save1)+1,
-  cols_ = 7:11
-))
-
-invisible(OutsideBorders(
-  wb,
-  sheet_ = "UK",
-  rows_ = 1:nrow(save1)+1,
-  cols_ = 13:16
-))
-
-invisible(OutsideBorders(
-  wb,
-  sheet_ = "UK",
-  rows_ = 1:nrow(save1)+1,
-  cols_ = 18:21
-))
-
-invisible(OutsideBorders(
-  wb,
-  sheet_ = "UK",
-  rows_ = 1:nrow(save1)+1,
-  cols_ = 23:25
-))
-
-freezePane(
-  wb,
-  sheet = "UK",
-  firstActiveRow = 2,
-  firstActiveCol = 6
-)
-
-
-pred_date <- Sys.Date() + 6 - match(weekdays(Sys.Date()), all_days)
-
-saveWorkbook(wb, paste0("OOS Review us - ",pred_date,".xlsx"), overwrite = T ) 
-
-
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -173,11 +70,11 @@ saveWorkbook(wb, paste0("OOS Review us - ",pred_date,".xlsx"), overwrite = T )
 #Subset blacklisted titles
 Blacklist <- Blacklist[ (Blacklist$AA_status %in% c("Super","Support") & Blacklist$WOH != "12+") | 
                           (Blacklist$AA_status %in% c("Super","Support") & 
-                             Blacklist$days_oos >= 2 & 
-                             Blacklist$Inventory <= 150 &
-                             (Blacklist$Reprint.Date >= "2022-01-01" | is.na(Blacklist$Reprint.Date) )  ),]
+                           Blacklist$Inventory <= 150 &
+                          (Blacklist$Reprint.Date >= "2022-01-01" | is.na(Blacklist$Reprint.Date) )  ),]
 
 Blacklist <- Blacklist[!is.na(Blacklist$Title),]
+Blacklist <- Blacklist[Blacklist$Print_status != "NOT YET PUBLISHED",]
 
 
 
@@ -186,19 +83,17 @@ Blacklist <- Blacklist[!is.na(Blacklist$Title),]
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-Blacklist <- Blacklist[,c(1:6,24,27:37,41,38:40)]
+Blacklist <- Blacklist[,c(1:6,24,27:37,39,38)]
 
 colnames(Blacklist)[7] <- "12W_Forecast"
 
 # Adds after the second column
-Blacklist <- add_column(Blacklist, new_col = NA, .after = 20)
 Blacklist <- add_column(Blacklist, new_col = NA, .after = 18)
 
 colnames(Blacklist)[6] <- ""
 colnames(Blacklist)[10] <- ""
 colnames(Blacklist)[15] <- ""
 colnames(Blacklist)[19] <- ""
-colnames(Blacklist)[22] <- ""
 
 
 #Highlighting columns with inventory issues
@@ -223,19 +118,19 @@ setColWidths(wb, "UK",  cols = 10, widths = 10)
 setColWidths(wb, "UK",  cols = 9, widths = 14)
 setColWidths(wb, "UK",  cols = 15, widths = 10)
 setColWidths(wb, "UK",  cols = 19, widths = 10)
-setColWidths(wb, "UK",  cols = 22, widths = 10)
+setColWidths(wb, "UK",  cols = 8, widths = 10)
 
 
 
 # Highlighting rows in red
 red_style <- createStyle(fgFill="#FF0000")
-x <- which( Blacklist$WOH %in% c("1","2") & (Blacklist$Reprint.Date >= "2021-12-25" | is.na(Blacklist$Reprint.Date) ) )
+x <- which( Blacklist$WOH %in% c("1","2") & (Blacklist$Reprint.Date >= (Sys.Date() + 7*5)| is.na(Blacklist$Reprint.Date) ) )
 addStyle(wb, sheet="UK", style=red_style, rows=x+1, cols=c(1:ncol(Blacklist)), 
          gridExpand=TRUE, stack = TRUE) 
 
 # Highlighting rows in orange
 orange_style <- createStyle(fgFill="#FFA500")
-x <- which( Blacklist$WOH %in% c("3","4") & (Blacklist$Reprint.Date >= "2021-12-25" | is.na(Blacklist$Reprint.Date) ) )
+x <- which( Blacklist$WOH %in% c("3","4") & (Blacklist$Reprint.Date >= (Sys.Date() + 7*5) | is.na(Blacklist$Reprint.Date) ) )
 addStyle(wb, sheet="UK", style=orange_style, rows=x+1, cols=c(1:ncol(Blacklist)), 
          gridExpand=TRUE, stack = TRUE) 
 
@@ -282,14 +177,6 @@ invisible(OutsideBorders(
   rows_ = 1:nrow(Blacklist)+1,
   cols_ = 20:21
 ))
-
-invisible(OutsideBorders(
-  wb,
-  sheet_ = "UK",
-  rows_ = 1:nrow(Blacklist)+1,
-  cols_ = 23:24
-))
-
 
 freezePane(
   wb,

@@ -1,8 +1,9 @@
 #!/bin/sh
 
-country='us'
+country='uk'
 
 outputString=$(python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Fetch_data.py" $country 2>qtemp);
+#outputString=$(python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\fetch_data_snfk.py" $country 2>qtemp);
 stderrString=$(<qtemp);
 echo "$outputString"
 
@@ -25,6 +26,7 @@ elif [[ $country == "us" ]]; then
 fi
 
 python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Write_data.py" $country
+#python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\write_data_snfk.py" $country
 
 python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Delete_Duplicate.py" 
 

@@ -2,7 +2,7 @@
 """
 Created on Tue Apr 13 15:47:43 2021
 
-@author: Stephane
+@author: Becky
 """
 
 from __future__ import print_function
@@ -11,9 +11,10 @@ import sys
 
 
 os.chdir('C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
-
+#os.chdir('C:\\dev\\env\\dkwebsols-forecasting-12w-22ef3797943e')
 
 country_var = sys.argv[1]
+
 
 class LatestDataCheck(Exception):
     pass
@@ -23,17 +24,19 @@ class LatestDataCheck(Exception):
 
 #Connecting to DB --------------------------------------------------------------------------------------------------------------------
 #!/usr/bin/python
+import snowflake.connector as sfc
+from snowflake.connector.pandas_tools import write_pandas
+import pandas as pd
 import psycopg2
 from configparser import ConfigParser
-import csv
 
-def config(filename='database.ini', section='postgresql'):
+def config(filename='database.ini', section='snowflake_db'):
     # create a parser
     parser = ConfigParser()
     # read config file
     parser.read(filename)
 
-    # get section, default to postgresql
+    # get section, default to snowflake_db
     db = {}
     if parser.has_section(section):
         params = parser.items(section)
@@ -46,59 +49,50 @@ def config(filename='database.ini', section='postgresql'):
 
 
 def connect():
-    """ Connect to the PostgreSQL database server """
+    """ Connect to the GDH database server """
     conn = None
     try:
         # read connection parameters
         params = config()
 
-        # connect to the PostgreSQL server
-        print('\nConnecting to the PostgreSQL database...')
-        conn = psycopg2.connect(**params)
+        # connect to the GDH server
+        print('\nConnecting to the GDH database...')
+        conn = sfc.connect(account='PRH',
+                                region='us-east-1',
+                                user= params['user'],
+                                password= params['password'],
+                                database="PRH_GLOBAL_DK_SANDBOX",
+                                schema="PUBLIC")
 		
         # create a cursor
         cur = conn.cursor()
         
         #execute a statement
-        print('PostgreSQL database version:')
-        cur.execute('SELECT version()')
+        print('Snowflake database version:')
+        cur.execute('SELECT CURRENT_VERSION()')
 
-        # display the PostgreSQL database server version
+        # display the GDH database server version
         db_version = cur.fetchone()
         print(db_version, ' \n\n ')
         
         #Copying csv file to forecasting_temp
-        file = open("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv\\Q1 Forecast {0} - Formatted.csv".format(country_var))
-
-        cur.copy_expert("""
-        COPY experiment.forecasting_temp(region, model, asin, pred_at, pred_for, pred_units)
-        FROM STDIN WITH CSV HEADER DELIMITER as ','
-        """, file
-        )
-
-        conn.commit()
-
-
-        #Copying csv file to forecasting_statistics_temp
-        file = open("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv\\Q1 Forecast {0}.csv".format(country_var))
-
-        cur.copy_expert("""
-        COPY experiment.forecasting_statistics_temp(region, model, asin, pred_at, "Amz_inv", "DK_inv", "Total_inventory", "Forecast_12w", 
-        "Adjusted_forecast_12w", "Weeks_on_hand", "Weeks_on_hand_AMZ", "Inv_issue","reprint_date","reprint_quantity")
-        FROM STDIN WITH CSV HEADER DELIMITER as ','
-        """, file
-        )
-
-        conn.commit()
-
+        file_fc = pd.read_csv("Write_data_sources/Q1 Forecast {0} - Formatted.csv".format(country_var))
+        write_pandas(conn, file_fc, "FORECASTING_TEMP")
         
+        
+        #Copying csv file to forecasting_statistics_temp
+        file_fcs = pd.read_csv("Write_data_sources/Q1 Forecast {0}.csv".format(country_var))
+        file_fcs.columns = file_fcs.columns.str.upper()
+        write_pandas(conn, file_fcs, "FORECASTING_STATISTICS_TEMP")
+       
+       
         
         print("Forecasts uploaded to database\n")
         
 
 
        
-        #close the communication with the PostgreSQL
+        #close the communication with the GDH
         cur.close()
         
 

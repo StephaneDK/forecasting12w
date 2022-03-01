@@ -56,11 +56,11 @@ Reprint <- read.csv("US Inventory.csv", header = T, stringsAsFactors = FALSE)
 Reprint <- Reprint %>%
   select(ASIN, 
          Product.Title,
-         Amazon.Net.Inventory..Sellable.On.Hand.Units.,
+         Sellable.On.Hand.Units,
          DK.Net.Inventory, 
-         DK.Reprint.Date, 
+         DK.Delivery.Date, #DK.Reprint.Date or DK.Delivery.Date
          Open.Purchase.Order.Quantity, 
-         DK.Reprint.Quantity 
+         DK.Open.Order.Qty #DK.Open.Order.Qty or DK.Reprint.Quantity
   ) %>%
   set_colnames(c("asin",
                  "title",
