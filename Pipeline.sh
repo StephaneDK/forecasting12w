@@ -26,7 +26,7 @@ elif [[ $country == "us" ]]; then
 fi
 
 python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Write_data.py" $country
-#python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\write_data_snfk.py" $country
+python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\write_data_snfk.py" $country
 
 python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Delete_Duplicate.py" 
 

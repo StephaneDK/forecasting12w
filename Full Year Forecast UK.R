@@ -370,7 +370,8 @@ temp <- arrange(pred_df_holt_damp_beta[1:20,], desc(pred_df_holt_damp_beta[1:20,
 for (i in 1:nrow(temp)){
   
   if (temp$asin[i] %in% Seas_adjQ$asin && temp$Publication[i] <= '2020-09-10' &&  
-      temp$asin[i] %notin% c("1409366553","1405393505","0241455154","0241287936","0241312817")){ #Manual exclusion for title with big volume difference
+      temp$asin[i] %notin% c("1409366553","1405393505","0241455154","0241287936","0241312817",
+                             "0241409705" )){ #Manual exclusion for title with big volume difference
     
     for (j in 10:21){
       

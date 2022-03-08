@@ -180,7 +180,7 @@ Blacklist <- Blacklist[,c(1:6,24,27:37,39,38)]
 colnames(Blacklist)[7] <- "12W_Forecast"
 
 # Adds after the second column
-Blacklist <- add_column(Blacklist, new_col = NA, .after = 18)
+Blacklist <- suppressWarnings(add_column(Blacklist, new_col = NA, .after = 18))
 
 colnames(Blacklist)[6] <- ""
 colnames(Blacklist)[10] <- ""

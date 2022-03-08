@@ -76,12 +76,12 @@ def connect():
         print(db_version, ' \n\n ')
         
         #Copying csv file to forecasting_temp
-        file_fc = pd.read_csv("Write_data_sources/Q1 Forecast {0} - Formatted.csv".format(country_var))
+        file_fc = pd.read_csv("Q1 Forecast {0} - Formatted.csv".format(country_var))
         write_pandas(conn, file_fc, "FORECASTING_TEMP")
         
         
         #Copying csv file to forecasting_statistics_temp
-        file_fcs = pd.read_csv("Write_data_sources/Q1 Forecast {0}.csv".format(country_var))
+        file_fcs = pd.read_csv("Q1 Forecast {0}.csv".format(country_var))
         file_fcs.columns = file_fcs.columns.str.upper()
         write_pandas(conn, file_fcs, "FORECASTING_STATISTICS_TEMP")
        
