@@ -10,6 +10,7 @@ import os
 import sys
 
 country_var = sys.argv[1]
+#country_var = "uk"
 
 os.chdir('C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
 
@@ -63,6 +64,7 @@ def connect():
 		
         # create a cursor
         cur = conn.cursor()
+        conn.set_client_encoding('UTF8')
         
         #execute a statement
         print('PostgreSQL database version:')
@@ -78,7 +80,7 @@ def connect():
 
             sql_context = """
             SELECT * FROM public.vw_amazon_sales_traffic_display
-            WHERE country = '%s' AND date = '%s'
+            WHERE country = '%s' AND date = '%s' and title IS NOT NULL
             """ % (country_var,last_saturday)
             
             cur.execute(sql_context)
@@ -92,8 +94,13 @@ def connect():
            
             sql_context = """
             SELECT * FROM public.vw_amazon_sales_traffic_display
-            WHERE country = '%s'
+            WHERE country = '%s' and title IS NOT NULL
             """% country_var
+
+            #SELECT a.* FROM public.vw_amazon_sales_traffic_display a 
+            #left join b3.onix_b3 b on a.asin= b.isbn10
+            #WHERE a.country = 'uk' and a.title IS NOT NULL and b.product_types not ilike '%audio%' 
+	        #and b.product_types not ilike '%digital%' and b.product_types IS NOT NULL 
             
             cur.execute(sql_context)
         
@@ -106,7 +113,7 @@ def connect():
 
 
 
-            with open('Sales %s.csv'% (country_var), 'w') as f:
+            with open('Sales %s.csv'% (country_var), 'w', encoding="utf-8") as f:
                 cur.copy_expert(outputquery, f)    
                 print('Latest Sales data saved \n')
 

@@ -9,8 +9,8 @@ from __future__ import print_function
 import os
 import sys
 
-country_var = sys.argv[1]
-#country_var = 'uk'
+#country_var = sys.argv[1]
+country_var = 'uk'
 
 os.chdir('C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
 #os.chdir('C:\\dev\\env\\dkwebsols-forecasting-12w-22ef3797943e')
@@ -81,195 +81,226 @@ def connect():
         db_version = cur.fetchone()
         print(db_version, ' \n ')
         
-        try:
 
-            sql_context = """
-            select 
-                week_end_date as date, lower(a.country) as country, 
-                b.asin, b.material as isbn, b.title_full as title,
-                CASE
-                    WHEN imprint_desc ilike '%%Garrick Street Press%%' THEN 'Garrick Street Press'
-                    WHEN imprint_desc ilike '%%children 0-9%%' or imprint_desc ilike '%%0 - 9%%' THEN 'Children 0-9'
-                    WHEN imprint_desc ilike '%%Licensi%%' THEN 'Licensing'
-                    WHEN imprint_desc ilike '%%Adult%%' AND imprint_desc ilike '%%Knowledg%%' THEN 'Knowledge Adult'
-                    WHEN imprint_desc ilike '%%Children%%' AND imprint_desc ilike '%%Knowledg%%' THEN 'Knowledge Children'
-                    WHEN imprint_desc ilike '%%Alpha%%' THEN 'Alpha'
-                    WHEN imprint_desc ilike '%%Life%%' THEN 'Life'
-                    WHEN imprint_desc ilike '%%Travel%%' THEN 'Travel'
-                    ELSE 'Others'
-                    END AS division,
-                b.imprint_desc as imprint, b.onsale_date as pub_date,
-                a.qty_ord as units              
 
-                from PRH_GLOBAL.PUBLIC.F_REGION_POS_SALES_WK a
-                left join PRH_GLOBAL.PUBLIC.D_REGION_PROD b 
-                ON a.prod_key = b.prod_key and a.region_code = b.region_code
-                where a.company = 'DK' and lower(a.country) = '%s' and a.week_end_date = '%s' 
-                        and a.POS_ACCT in ('A4', 'AMZ') and format != 'EL'
-            
-            """ % (country_var,last_saturday)
-            
-            cur.execute(sql_context)
+        sql_context = """
+        select 
+            week_end_date as date, lower(a.country) as country, 
+            b.asin, b.material as isbn, b.title_full as title,
+            CASE
+                WHEN imprint_desc ilike '%%Garrick Street Press%%' THEN 'Garrick Street Press'
+                WHEN imprint_desc ilike '%%children 0-9%%' or imprint_desc ilike '%%0 - 9%%' THEN 'Children 0-9'
+                WHEN imprint_desc ilike '%%Licensi%%' THEN 'Licensing'
+                WHEN imprint_desc ilike '%%Adult%%' AND imprint_desc ilike '%%Knowledg%%' THEN 'Knowledge Adult'
+                WHEN imprint_desc ilike '%%Children%%' AND imprint_desc ilike '%%Knowledg%%' THEN 'Knowledge Children'
+                WHEN imprint_desc ilike '%%Alpha%%' THEN 'Alpha'
+                WHEN imprint_desc ilike '%%Life%%' THEN 'Life'
+                WHEN imprint_desc ilike '%%Travel%%' THEN 'Travel'
+                ELSE 'Others'
+                END AS division,
+            b.imprint_desc as imprint, b.onsale_date as pub_date,
+            a.qty_ord as units              
+
+            from PRH_GLOBAL.PUBLIC.F_REGION_POS_SALES_WK a
+            left join PRH_GLOBAL.PUBLIC.D_REGION_PROD b 
+            ON a.prod_key = b.prod_key and a.region_code = b.region_code
+            where a.company = 'DK' and lower(a.country) = '%s' and a.week_end_date = '%s' 
+                    and a.POS_ACCT in ('A4', 'AMZ') and format != 'EL'
         
-            # Fetch all rows from database
-            record = cur.fetchall()
-            
-            #Checking if latest data is available
-            if not record :
-                print('No Sales Data')
-                raise LatestDataCheck()
-           
-            sql_context = """
-            select 
-                week_end_date as date, lower(a.country) as country, 
-                b.asin, b.material as isbn, b.title_full as title,
-                CASE
-                    WHEN imprint_desc ilike '%%Garrick Street Press%%' THEN 'Garrick Street Press'
-                    WHEN imprint_desc ilike '%%children 0-9%%' or imprint_desc ilike '%%0 - 9%%' THEN 'Children 0-9'
-                    WHEN imprint_desc ilike '%%Licensi%%' THEN 'Licensing'
-                    WHEN imprint_desc ilike '%%Adult%%' AND imprint_desc ilike '%%Knowledg%%' THEN 'Knowledge Adult'
-                    WHEN imprint_desc ilike '%%Children%%' AND imprint_desc ilike '%%Knowledg%%' THEN 'Knowledge Children'
-                    WHEN imprint_desc ilike '%%Alpha%%' THEN 'Alpha'
-                    WHEN imprint_desc ilike '%%Life%%' THEN 'Life'
-                    WHEN imprint_desc ilike '%%Travel%%' THEN 'Travel'
-                    ELSE 'Others'
-                    END AS division,
-                b.imprint_desc as imprint, b.onsale_date as pub_date,
-                a.qty_ord as units              
-
-                from PRH_GLOBAL.PUBLIC.F_REGION_POS_SALES_WK a
-                left join PRH_GLOBAL.PUBLIC.D_REGION_PROD b 
-                ON a.prod_key = b.prod_key and a.region_code = b.region_code
-                where extract(year from a.week_end_date) >= '2017' and a.company = 'DK' and lower(a.country) = '%s'  
-                        and a.POS_ACCT in ('A4', 'AMZ') and format != 'EL'
-            """% country_var
-            
-            cur.execute(sql_context)
+        """ % (country_var,last_saturday)
         
-            # Fetch all rows from database
-            record = cur.fetchall()
-               
-            #Writing csv file
-            with open('Sales %s.csv'% (country_var), 'w') as f:
-                column_names = [i[0] for i in cur.description]
-                file = csv.writer(f, lineterminator = '\n')
-                file.writerow(column_names)
-                file.writerows(record)
-                print('Latest Sales data saved \n')
-
-
-
-
-            #Getting print status
-            sql_context = """
-            select material as isbn, sales_status_desc
-            from PRH_GLOBAL.PUBLIC.D_REGION_PROD
-            where region_code = 'US' and company = 'DK' and format not in ('EL', 'DN')
-            """
-            
-            cur.execute(sql_context)
+        cur.execute(sql_context)
+    
+        # Fetch all rows from database
+        record = cur.fetchall()
         
-            # Fetch all rows from database
-            record = cur.fetchall()
-
-            #Checking if latest data is available
-            if not record :
-                print('No Print Status')
-                raise LatestDataCheck()
-
-            #Writing csv file
-            with open('Print Status US.csv', 'w') as f:
-                column_names = [i[0] for i in cur.description]
-                file = csv.writer(f, lineterminator = '\n')
-                file.writerow(column_names)
-                file.writerows(record) 
-                print('Latest print status data saved \n')
-                
-                # BH: only US need as the UK file has got the print status already
-
-
-            #Getting AA status
-            sql_context = """
-            select asin, curr_status 
-            from PRH_GLOBAL_DK_SANDBOX..VW_AMAZON_PRIORITY_LIST
-            where country = 'us'
-            """
-            
-            cur.execute(sql_context)
+        #Checking if latest data is available
+        if not record :
+            print('No Sales Data')
+            raise LatestDataCheck()
         
-            # Fetch all rows from database
-            record = cur.fetchall()
-
-            #Checking if latest data is available
-            if not record :
-                print('No AA Status')
-                raise LatestDataCheck()
-
-            #Writing csv file
-            with open('AA Status US.csv', 'w') as f:
-                column_names = [i[0] for i in cur.description]
-                file = csv.writer(f, lineterminator = '\n')
-                file.writerow(column_names)
-                file.writerows(record)   
-                print('Latest AA status data saved \n')
-
-
-
-            
-
-            #Getting Amazon scrape info
-            sql_context = """
-            select asin, availability_text
-            from PRH_GLOBAL_DK_SANDBOX..AMZ_PRODUCT_PAGE
-            where date_of_extraction = '%s' AND lower(country) = '%s'
-            """% (last_saturday, country_var)
-            
-            cur.execute(sql_context)
+        sql_context = """
         
-            # Fetch all rows from database
-            record = cur.fetchall()
+        with sub as ( select  b.region_code, b.prod_key,  sum(qty_ord) from PRH_GLOBAL.PUBLIC.F_REGION_POS_SALES_WK a
 
-            #Checking if latest data is available
-            if not record :
-                print('No Amazon scrape')
-                raise LatestDataCheck()  
-
-            #Writing csv file
-            with open('Scrape info %s.csv'% (country_var), 'w') as f:
-                column_names = [i[0] for i in cur.description]
-                file = csv.writer(f, lineterminator = '\n')
-                file.writerow(column_names)
-                file.writerows(record)  
-                print('Latest scrape data saved \n')
-
-
-
-            #BH: Ask Stephane if we still need it
+            left join PRH_GLOBAL.PUBLIC.D_REGION_PROD b 
+            ON a.prod_key = b.prod_key and a.region_code = b.region_code
+    
+            WHERE lower(a.country) = '%s' and  a.company = 'DK' and a.POS_ACCT in ('A4', 'AMZ') and 
+                format NOT IN ('EL','DN', 'EBK') and
+                week_end_date >= CURRENT_DATE - 28
             
-            #Getting AMZ Stock status
-            #sql_context = """
-            #select * from vw_amazon_stock_alert_14d
-            #"""
+            group by 1,2 
+    
+            HAVING sum(qty_ord) > 10
             
-            #cur.execute(sql_context)
+                    ) 
+
+        select 
+            week_end_date as date, 
+            lower(a.country) as country, 
+            b.asin, 
+            b.material as isbn, 
+            b.title_full as title,
+            CASE
+                WHEN imprint_desc ilike '%%Garrick Street Press%%' THEN 'Garrick Street Press'
+                WHEN imprint_desc ilike '%%children 0-9%%' or imprint_desc ilike '%%0 - 9%%' THEN 'Children 0-9'
+                WHEN imprint_desc ilike '%%Licensi%%' THEN 'Licensing'
+                WHEN imprint_desc ilike '%%Adult%%' AND imprint_desc ilike '%%Knowledg%%' THEN 'Knowledge Adult'
+                WHEN imprint_desc ilike '%%Children%%' AND imprint_desc ilike '%%Knowledg%%' THEN 'Knowledge Children'
+                WHEN imprint_desc ilike '%%Alpha%%' THEN 'Alpha'
+                WHEN imprint_desc ilike '%%Life%%' THEN 'Life'
+                WHEN imprint_desc ilike '%%Travel%%' THEN 'Travel'
+                ELSE 'Others'
+                END AS division,
+            b.imprint_desc as imprint, 
+            b.onsale_date as pub_date,
+            a.qty_ord as units 
         
-            # Fetch all rows from database
-            #record = cur.fetchall()
-                
+                            
 
-            #Writing csv file
-            #outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(sql_context)
+        from sub s
 
-            #with open('AMZ Stock status.csv', 'w') as f:
-            #    cur.copy_expert(outputquery, f)    
-            #    print('Latest stock status data saved \n')
+        left join PRH_GLOBAL.PUBLIC.F_REGION_POS_SALES_WK a
+            ON s.prod_key = a.prod_key and s.region_code = a.region_code
+
+        left join PRH_GLOBAL.PUBLIC.D_REGION_PROD b 
+            ON a.prod_key = b.prod_key and a.region_code = b.region_code
+            
+        where 
+            extract(year from a.week_end_date) >= '2017' and
+            a.company = 'DK' and 
+            lower(a.country) = '%s' and  
+            a.POS_ACCT in ('A4', 'AMZ') and 
+            format NOT IN ('EL','DN', 'EBK') 
+            
+
+        """ % (country_var,country_var)
+        
+        cur.execute(sql_context)
+    
+        # Fetch all rows from database
+        record = cur.fetchall()
+            
+        #Writing csv file
+        with open('Sales %s.csv'% (country_var), 'w') as f:
+            column_names = [i[0] for i in cur.description]
+            file = csv.writer(f, lineterminator = '\n')
+            file.writerow(column_names)
+            file.writerows(record)
+            print('Latest Sales data saved \n')
+
+
+
+
+        #Getting print status
+        sql_context = """
+        select material as isbn, sales_status_desc
+        from PRH_GLOBAL.PUBLIC.D_REGION_PROD
+        where region_code = 'US' and company = 'DK' and format not in ('EL', 'DN')
+        """
+        
+        cur.execute(sql_context)
+    
+        # Fetch all rows from database
+        record = cur.fetchall()
+
+        #Checking if latest data is available
+        if not record :
+            print('No Print Status')
+            raise LatestDataCheck()
+
+        #Writing csv file
+        with open('Print Status US.csv', 'w') as f:
+            column_names = [i[0] for i in cur.description]
+            file = csv.writer(f, lineterminator = '\n')
+            file.writerow(column_names)
+            file.writerows(record) 
+            print('Latest print status data saved \n')
+            
+            # BH: only US need as the UK file has got the print status already
+
+
+        #Getting AA status
+        sql_context = """
+        select asin, curr_status 
+        from PRH_GLOBAL_DK_SANDBOX..VW_AMAZON_PRIORITY_LIST
+        where country = 'us'
+        """
+        
+        cur.execute(sql_context)
+    
+        # Fetch all rows from database
+        record = cur.fetchall()
+
+        #Checking if latest data is available
+        if not record :
+            print('No AA Status')
+            raise LatestDataCheck()
+
+        #Writing csv file
+        with open('AA Status US.csv', 'w') as f:
+            column_names = [i[0] for i in cur.description]
+            file = csv.writer(f, lineterminator = '\n')
+            file.writerow(column_names)
+            file.writerows(record)   
+            print('Latest AA status data saved \n')
+
+
+
+        
+
+        #Getting Amazon scrape info
+        sql_context = """
+        select asin, availability_text
+        from PRH_GLOBAL_DK_SANDBOX..AMZ_PRODUCT_PAGE
+        where date_of_extraction = '%s' AND lower(country) = '%s'
+        """% (last_saturday, country_var)
+        
+        cur.execute(sql_context)
+    
+        # Fetch all rows from database
+        record = cur.fetchall()
+
+        #Checking if latest data is available
+        if not record :
+            print('No Amazon scrape')
+            raise LatestDataCheck()  
+
+        #Writing csv file
+        with open('Scrape info %s.csv'% (country_var), 'w') as f:
+            column_names = [i[0] for i in cur.description]
+            file = csv.writer(f, lineterminator = '\n')
+            file.writerow(column_names)
+            file.writerows(record)  
+            print('Latest scrape data saved \n')
+
+
+
+        #BH: Ask Stephane if we still need it
+        
+        #Getting AMZ Stock status
+        #sql_context = """
+        #select * from vw_amazon_stock_alert_14d
+        #"""
+        
+        #cur.execute(sql_context)
+    
+        # Fetch all rows from database
+        #record = cur.fetchall()
+            
+
+        #Writing csv file
+        #outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(sql_context)
+
+        #with open('AMZ Stock status.csv', 'w') as f:
+        #    cur.copy_expert(outputquery, f)    
+        #    print('Latest stock status data saved \n')
 
 
 
                         
-        except (Exception, LatestDataCheck):
-            print('No values yet \n')
-            print('ValueError1', file=sys.stderr)
+
 
             
        

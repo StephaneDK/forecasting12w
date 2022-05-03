@@ -30,7 +30,7 @@ options(scipen=999, digits = 3, error=function() { traceback(2); if(!interactive
 all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
 
 `%notin%` <- Negate(`%in%`)
-current_quarter <- "Q1"
+current_quarter <- c("Q1","Q2")
 
 #Setting the directory where all files will be used from for this project
 setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
@@ -38,15 +38,20 @@ setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and invento
 #Importing and clean Sales Data
 Sales_UK <- read.csv("Sales uk.csv", header = T, stringsAsFactors = FALSE)
 Sales_UK <- Sales_UK %>% 
-            subset(title != "") %>% 
-            mutate(date = as.Date(date),
-                   asin = case_when(nchar(asin) == 9 ~ paste0("0",asin),
-                                    TRUE ~ asin)
-                   ) %>%
+  rename_all(tolower)  %>% 
+  subset(title != "" ) %>% 
+  mutate(date = as.Date(date),
+         asin = case_when(nchar(asin) == 9 ~ paste0("0",asin),
+                          TRUE ~ asin)
+  ) %>%
   select(date, asin, isbn, title, division, pub_date, units) %>%
   set_colnames(c("date","asin","isbn","title","Division","Publication","units")) %>%
   dcast(asin + isbn + title + Division + Publication ~ date, value.var="units", fun.aggregate = sum) %>%
-  arrange(desc(.[ncol(.)]))
+  subset( rowSums( .[,(ncol(.)-3): ncol(.)]) >= 5 ) %>%
+  arrange(desc(.[ncol(.)])) %>%
+  mutate_all(~replace(., is.na(.), 0))
+
+View(Sales_UK)
 
 Q1 <- Sales_UK
 
@@ -70,7 +75,7 @@ Reprint <- Reprint %>%
                           "Print Status",
                           "AA Status",
                           "Reprint Qty"))  %>%
-           mutate(Reprint.Date = as.Date(Reprint.Date, format = "%m/%d/%Y"),
+           mutate(Reprint.Date = as.Date(Reprint.Date, format = "%d/%m/%Y"),
                   `Amz inv` =  suppressWarnings(as.numeric(gsub(",","",`Amz inv`))),
                   `TBS inv` =  suppressWarnings(as.numeric(gsub(",","",`TBS inv`))),
                   `Reprint Qty` =  suppressWarnings(as.numeric(gsub(",","",`Reprint Qty`))),
@@ -212,9 +217,9 @@ Seas_adjQ[,3:ncol(Seas_adjQ)] <- round(Seas_adjQ[,3:ncol(Seas_adjQ)],3)
 
 
 #Keep only current seasonal adjustment data
-Seas_adjQ <- Seas_adjQ[ Seas_adjQ$asin %in% subset(Q_iso, Q_iso$Season == current_quarter)$asin ,]
-
+Seas_adjQ <- Seas_adjQ[ Seas_adjQ$asin %in% subset(Q_iso, Q_iso$Season %in% current_quarter)$asin ,]
 Seas_adjQ <- arrange(Seas_adjQ, desc(Seas_adjQ$asin))
+
 pred_df_holt_damp_beta <- arrange(pred_df_holt_damp_beta, desc(pred_df_holt_damp_beta$asin)) 
 
 #Seasonal adjustment loop
@@ -371,7 +376,7 @@ for (i in 1:nrow(temp)){
   
   if (temp$asin[i] %in% Seas_adjQ$asin && temp$Publication[i] <= '2020-09-10' &&  
       temp$asin[i] %notin% c("1409366553","1405393505","0241455154","0241287936","0241312817",
-                             "0241409705" )){ #Manual exclusion for title with big volume difference
+                             "0241409705", "0241226317", "0241226317" )){ #Manual exclusion for title with big volume difference
     
     for (j in 10:21){
       
@@ -591,6 +596,8 @@ Hitlist_titles <- c("0241315611","0241343267","0241424305","0241357551","0241224
                     "0241515106","0241446341","0241412706")
 
 
+
+
 # --------------------------------------------------------------------------------------------------------------
 #                               Saving file + formatting                                                        \
 # --------------------------------------------------------------------------------------------------------------
@@ -644,17 +651,17 @@ x <- which( pred_df_holt_damp_beta$Inv_issue ==1 )
 addStyle(wb, sheet="UK", style=yellow_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
          gridExpand=TRUE, stack = TRUE) # +1 for header line
 
-# Highlighting rows in light green for Hitlist
-green_style <- createStyle(fgFill="#90EE90")
-x <- which( pred_df_holt_damp_beta$asin %in% Hitlist_titles )
-addStyle(wb, sheet="UK", style=green_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
-         gridExpand=TRUE, stack = TRUE) # +1 for header line
-
-# Highlighting rows in orange for Hitlist issue
-orange_style <- createStyle(fgFill="#FF4500")
-x <- which( pred_df_holt_damp_beta$asin %in% Hitlist_titles &  pred_df_holt_damp_beta$Inv_issue ==1)
-addStyle(wb, sheet="UK", style=orange_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
-         gridExpand=TRUE, stack = TRUE) # +1 for header line
+# # Highlighting rows in light green for Hitlist
+# green_style <- createStyle(fgFill="#90EE90")
+# x <- which( pred_df_holt_damp_beta$asin %in% Hitlist_titles )
+# addStyle(wb, sheet="UK", style=green_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
+#          gridExpand=TRUE, stack = TRUE) # +1 for header line
+# 
+# # Highlighting rows in orange for Hitlist issue
+# orange_style <- createStyle(fgFill="#FF4500")
+# x <- which( pred_df_holt_damp_beta$asin %in% Hitlist_titles &  pred_df_holt_damp_beta$Inv_issue ==1)
+# addStyle(wb, sheet="UK", style=orange_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
+#          gridExpand=TRUE, stack = TRUE) # +1 for header line
 
 
 #Centering cells

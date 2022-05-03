@@ -14,7 +14,7 @@ os.chdir('C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inve
 #os.chdir('C:\\dev\\env\\dkwebsols-forecasting-12w-22ef3797943e')
 
 country_var = sys.argv[1]
-
+#country_var = "uk"
 
 class LatestDataCheck(Exception):
     pass

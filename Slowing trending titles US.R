@@ -1,6 +1,8 @@
 library.path <- .libPaths("C:/Users/steph/Documents/R/win-library/4.0")
 source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\OutsideBorders.R")
 
+cat("\nSlowing Trending Titles start\n")
+
 oldw <- getOption("warn")
 options(warn = -1)
 
@@ -139,5 +141,6 @@ freezePane(
 
 saveWorkbook(wb, paste0("Slowing trending titles US - ",pred_date +7,".xlsx"), overwrite = T) 
 
+cat("Slowing Trending Titles start\n")
 
 

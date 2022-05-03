@@ -1,6 +1,7 @@
 library.path <- .libPaths("C:/Users/steph/Documents/R/win-library/4.0")
 source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\OutsideBorders.R")
 
+cat("\nSlowing Trending Titles start\n")
 
 oldw <- getOption("warn")
 options(warn = -1)
@@ -38,8 +39,10 @@ pred_date <- Sys.Date() + 6 - match(weekdays(Sys.Date()), all_days) - 7
 
 #Importing Data
 Sales_UK <- read.csv("Sales uk.csv", header = T, stringsAsFactors = FALSE)
+colnames(Sales_UK) <- tolower(colnames(Sales_UK) )
 Sales_UK$date <- as.Date(Sales_UK$date)
 Sales_UK <- Sales_UK[Sales_UK$title != "",]
+
 
 #Importing Data
 forecasts <- read.csv( paste0("Forecast uk - ",pred_date,".csv"), header = T, stringsAsFactors = FALSE)
@@ -152,5 +155,6 @@ freezePane(
 saveWorkbook(wb, paste0("Slowing trending titles UK - ",pred_date +7,".xlsx"), overwrite = T) 
 
 
+cat("Slowing Trending Titles start\n")
 
 
