@@ -76,147 +76,144 @@ def connect():
         db_version = cur.fetchone()
         print(db_version, ' \n ')
         
-        try:
-
-            sql_context = """
-            SELECT * FROM public.vw_amazon_sales_traffic_display
-            WHERE country = '%s' AND date = '%s' and title IS NOT NULL
-            """ % (country_var,last_saturday)
-            
-            cur.execute(sql_context)
         
-            # Fetch all rows from database
-            record = cur.fetchall()
-            
-            #Checking if latest data is available
-            if not record :
-                raise LatestDataCheck()
-           
-            sql_context = """
-            SELECT * FROM public.vw_amazon_sales_traffic_display
-            WHERE country = '%s' and title IS NOT NULL
-            """% country_var
 
-            #SELECT a.* FROM public.vw_amazon_sales_traffic_display a 
-            #left join b3.onix_b3 b on a.asin= b.isbn10
-            #WHERE a.country = 'uk' and a.title IS NOT NULL and b.product_types not ilike '%audio%' 
-	        #and b.product_types not ilike '%digital%' and b.product_types IS NOT NULL 
-            
-            cur.execute(sql_context)
+        sql_context = """
+        SELECT * FROM public.vw_amazon_sales_traffic_display
+        WHERE country = '%s' AND date = '%s' and title IS NOT NULL
+        """ % (country_var,last_saturday)
         
-            # Fetch all rows from database
-            record = cur.fetchall()
+        cur.execute(sql_context)
+    
+        # Fetch all rows from database
+        record = cur.fetchall()
+        
+        #Checking if latest data is available
+        if not record :
+            raise LatestDataCheck()
+        
+        sql_context = """
+        SELECT * FROM public.vw_amazon_sales_traffic_display
+        WHERE country = '%s' and title IS NOT NULL
+        """% country_var
+
+        #SELECT a.* FROM public.vw_amazon_sales_traffic_display a 
+        #left join b3.onix_b3 b on a.asin= b.isbn10
+        #WHERE a.country = 'uk' and a.title IS NOT NULL and b.product_types not ilike '%audio%' 
+        #and b.product_types not ilike '%digital%' and b.product_types IS NOT NULL 
+        
+        cur.execute(sql_context)
+    
+        # Fetch all rows from database
+        record = cur.fetchall()
+            
+
+        #Writing csv file
+        outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(sql_context)
+
+
+
+        with open('Sales %s.csv'% (country_var), 'w', encoding="utf-8") as f:
+            cur.copy_expert(outputquery, f)    
+            print('Latest Sales data saved \n')
+
+        
+
+        
+
+
+        #Getting print status
+        sql_context = """
+        select a.edition_answer_answer, b.isbn from 
+        b3.b3_edition_answer a, b3.onix_b3 b
+        where a.b3_id = b.id and country = 'US'
+        """
+        
+        cur.execute(sql_context)
+    
+        # Fetch all rows from database
+        record = cur.fetchall()
+            
+
+        #Writing csv file
+        outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(sql_context)
+
+        with open('Print Status US.csv', 'w', encoding="utf-8") as f:
+            cur.copy_expert(outputquery, f)    
+            print('Latest print status data saved \n')
+
+
+
+        #Getting AA status
+        sql_context = """
+        select asin, curr_status  from mvw_amazon_priority_list
+        where country = 'us'
+        """
+        
+        cur.execute(sql_context)
+    
+        # Fetch all rows from database
+        record = cur.fetchall()
+            
+
+        #Writing csv file
+        outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(sql_context)
+
+        with open('AA Status US.csv', 'w', encoding="utf-8") as f:
+            cur.copy_expert(outputquery, f)    
+            print('Latest AA status data saved \n')
+
+
+
+
+
+        #Getting Amazon scrape info
+        sql_context = """
+        SELECT title_asin, availability_text FROM scrape.amazon_product_page_info
+        where date_of_extraction = '%s' AND country = '%s'
+        """% (last_saturday, country_var)
+        
+        cur.execute(sql_context)
+    
+        # Fetch all rows from database
+        record = cur.fetchall()
+            
+
+        #Writing csv file
+        outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(sql_context)
+
+        with open('Scrape info %s.csv'% (country_var), 'w', encoding="utf-8") as f:
+            cur.copy_expert(outputquery, f)    
+            print('Latest scrape data saved \n')
+
+
+
+
+        
+        #Getting AMZ Stock status
+        sql_context = """
+        select * from vw_amazon_stock_alert_14d
+        """
+        
+        cur.execute(sql_context)
+    
+        # Fetch all rows from database
+        record = cur.fetchall()
+            
+
+        #Writing csv file
+        outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(sql_context)
+
+        with open('AMZ Stock status.csv', 'w', encoding="utf-8") as f:
+            cur.copy_expert(outputquery, f)    
+            print('Latest stock status data saved \n')
+
+
+
+
+
+
                 
-
-            #Writing csv file
-            outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(sql_context)
-
-
-
-            with open('Sales %s.csv'% (country_var), 'w', encoding="utf-8") as f:
-                cur.copy_expert(outputquery, f)    
-                print('Latest Sales data saved \n')
-
-            
-
-            
-
-
-            #Getting print status
-            sql_context = """
-            select a.edition_answer_answer, b.isbn from 
-            b3.b3_edition_answer a, b3.onix_b3 b
-            where a.b3_id = b.id and country = 'US'
-            """
-            
-            cur.execute(sql_context)
-        
-            # Fetch all rows from database
-            record = cur.fetchall()
-                
-
-            #Writing csv file
-            outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(sql_context)
-
-            with open('Print Status US.csv', 'w') as f:
-                cur.copy_expert(outputquery, f)    
-                print('Latest print status data saved \n')
-
-
-
-            #Getting AA status
-            sql_context = """
-            select asin, curr_status  from mvw_amazon_priority_list
-            where country = 'us'
-            """
-            
-            cur.execute(sql_context)
-        
-            # Fetch all rows from database
-            record = cur.fetchall()
-                
-
-            #Writing csv file
-            outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(sql_context)
-
-            with open('AA Status US.csv', 'w') as f:
-                cur.copy_expert(outputquery, f)    
-                print('Latest AA status data saved \n')
-
-
-
-
-
-            #Getting Amazon scrape info
-            sql_context = """
-            SELECT title_asin, availability_text FROM scrape.amazon_product_page_info
-            where date_of_extraction = '%s' AND country = '%s'
-            """% (last_saturday, country_var)
-            
-            cur.execute(sql_context)
-        
-            # Fetch all rows from database
-            record = cur.fetchall()
-                
-
-            #Writing csv file
-            outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(sql_context)
-
-            with open('Scrape info %s.csv'% (country_var), 'w') as f:
-                cur.copy_expert(outputquery, f)    
-                print('Latest scrape data saved \n')
-
-
-
-
-            
-            #Getting AMZ Stock status
-            sql_context = """
-            select * from vw_amazon_stock_alert_14d
-            """
-            
-            cur.execute(sql_context)
-        
-            # Fetch all rows from database
-            record = cur.fetchall()
-                
-
-            #Writing csv file
-            outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(sql_context)
-
-            with open('AMZ Stock status.csv', 'w') as f:
-                cur.copy_expert(outputquery, f)    
-                print('Latest stock status data saved \n')
-
-
-
-
-
-
-                        
-        except (Exception, LatestDataCheck):
-            print('No values yet \n')
-            print('ValueError1', file=sys.stderr)
 
             
        

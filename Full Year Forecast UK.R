@@ -26,10 +26,20 @@ library(magrittr, lib.loc = library.path)
 
 options(warn = oldw)
 
-options(scipen=999, digits = 3, error=function() { traceback(2); if(!interactive()) quit("no", status = 1, runLast = FALSE) } )
+options(scipen=999, digits = 3 )
+
 all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
 
 `%notin%` <- Negate(`%in%`)
+
+convert.brackets <- function(x){
+  if(grepl("\\(.*\\)", x)){
+    paste0("-", gsub("\\(|\\)", "", x))
+  } else {
+    x
+  }
+}
+
 current_quarter <- c("Q1","Q2")
 
 #Setting the directory where all files will be used from for this project
@@ -50,8 +60,6 @@ Sales_UK <- Sales_UK %>%
   subset( rowSums( .[,(ncol(.)-3): ncol(.)]) >= 5 ) %>%
   arrange(desc(.[ncol(.)])) %>%
   mutate_all(~replace(., is.na(.), 0))
-
-View(Sales_UK)
 
 Q1 <- Sales_UK
 
@@ -77,7 +85,8 @@ Reprint <- Reprint %>%
                           "Reprint Qty"))  %>%
            mutate(Reprint.Date = as.Date(Reprint.Date, format = "%d/%m/%Y"),
                   `Amz inv` =  suppressWarnings(as.numeric(gsub(",","",`Amz inv`))),
-                  `TBS inv` =  suppressWarnings(as.numeric(gsub(",","",`TBS inv`))),
+                  `TBS inv` =  gsub("#N/A",0,`TBS inv`) %>% gsub(" ","",.) %>%  gsub(",","",.)  %>% gsub("\\b-\\b","0",.) %>% 
+                                                            sapply( ., convert.brackets, USE.NAMES = F) %>%  as.numeric(.),
                   `Reprint Qty` =  suppressWarnings(as.numeric(gsub(",","",`Reprint Qty`))),
                   `AMZ Open Orders` =  suppressWarnings(as.numeric(gsub(",","",`AMZ Open Orders`))),
                   `Reprint Qty` = replace(`Reprint Qty`, is.na(`Reprint Qty`), NaN),
@@ -260,142 +269,20 @@ for ( i in 1:nrow(pred_df_holt_damp_beta)){
 #Manual adjustment for books with PR campaigns or sudden sales spikes (not used now)
 
 
+
 #-----------------------------------------------------------------------------------------------------------------------
 #                                 Christmas period adjustment
 #-----------------------------------------------------------------------------------------------------------------------
 
-
-#Subsetting to Q4-2020 sales
-xmas_sales <- Q1 
-xmas_sales <- xmas_sales[,c(1:5,grep(as.character(as.Date(colnames(pred_df_holt_damp_beta[6])) - 364), colnames(xmas_sales) ):
-                              grep(as.character(as.Date(colnames(pred_df_holt_damp_beta[21])) - 364), colnames(xmas_sales)) )]
-xmas_sales <- xmas_sales[xmas_sales$Publication <= "2020-10-01",]
-
-
-#Division aggregates
-xmas_change <- aggregate(xmas_sales[,6:21], list(xmas_sales$Division), mean)
-
-#Create empty data frame to store seasonal percentage changes
-xmas_change_per <- data.frame(matrix(ncol = ncol(xmas_change) , nrow = nrow(xmas_change)) ) #Same Structure
-colnames(xmas_change_per) <- colnames(xmas_change) #Same column names
-xmas_change_per$Group.1 <- xmas_change$Group.1 #Same Division names
-
-
-#Compute seasonal percentage changes using last year data
-for (i in 1:nrow(xmas_change_per)){
-  
-  for ( j in 1:ncol(xmas_change_per)){
-    
-    if (j >= 2 & j <=6 ){
-      xmas_change_per[i,j] <- 1
-      
-    } else if (j > 6) {
-      xmas_change_per[i,j] <- xmas_change[i,j] / xmas_change[i,j-1]
-      
-    }
-    
-  }
-  
-}
-
-xmas_change_per[is.na(xmas_change_per)] <- 1
-
-
-#Seasonal adjustment loop (only between Nov 08 2021 and Jan 15 2022)
-for (i in 1:nrow(pred_df_holt_damp_beta)){
-  
-  
-  for (j in 10:21){
-    
-    if (as.Date(colnames(pred_df_holt_damp_beta)[j]) >= "2021-11-13" &
-        as.Date(colnames(pred_df_holt_damp_beta)[j]) <= "2022-01-15" )
-      
-      pred_df_holt_damp_beta[i,j] <- ceiling(pred_df_holt_damp_beta[i,j-1]*
-                                               xmas_change_per[ xmas_change_per$Group.1 == pred_df_holt_damp_beta$Division[i], 
-                                                                as.character(as.Date(colnames(pred_df_holt_damp_beta)[j]) - 364) ] )
-    
-  }
-  
-}
-
-
+#pred_df_holt_damp_beta <- ChristmasAdjustment(pred_df_holt_damp_beta, Q1)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-#                                 Title level adjustment for top 20 titles
+#                                 Title level adjustment for top 55 titles
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-pred_df_holt_damp_beta <- arrange(pred_df_holt_damp_beta, desc(pred_df_holt_damp_beta[,9]) )
-
-#Create 2020 only data frame
-prev_year <- Q1[ Q1$asin %in% pred_df_holt_damp_beta[1:20,1], ]
-prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-01-01", colnames(Q1))) ]
-prev_year[prev_year <= 0] <- 1
-
-
-#Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 55 , nrow = nrow(prev_year)))
-colnames(Seas_adjQ) <- colnames(prev_year)
-
-Seas_adjQ$asin <- prev_year$asin
-Seas_adjQ$title <- prev_year$title
-
-
-
-#Compute seasonal percentage changes using last year data
-for (i in 1:nrow(Seas_adjQ)){
-  for ( j in 1:ncol(Seas_adjQ)){
-    if (j == 3){
-      Seas_adjQ[i,j] <- 1
-      
-    } else if (j >3) {
-      Seas_adjQ[i,j] <- prev_year[i,j] / prev_year[i,j-1]
-      
-    }
-    
-  }
-  
-}
-
-#Clean and readjust
-Seas_adjQ[is.na(Seas_adjQ)] <- 1
-Seas_adjQ[Seas_adjQ == 0] <- 1
-Seas_adjQ[Seas_adjQ == Inf] <- 1
-
-
-#Rounding to 3 decimal places
-Seas_adjQ[,3:ncol(Seas_adjQ)] <- round(Seas_adjQ[,3:ncol(Seas_adjQ)],3)
-
-Seas_adjQ <- arrange(Seas_adjQ, desc(Seas_adjQ$asin))
-temp <- arrange(pred_df_holt_damp_beta[1:20,], desc(pred_df_holt_damp_beta[1:20,1]) )
-
-
-#Seasonal adjustment loop
-for (i in 1:nrow(temp)){
-  
-  if (temp$asin[i] %in% Seas_adjQ$asin && temp$Publication[i] <= '2020-09-10' &&  
-      temp$asin[i] %notin% c("1409366553","1405393505","0241455154","0241287936","0241312817",
-                             "0241409705", "0241226317", "0241226317" )){ #Manual exclusion for title with big volume difference
-    
-    for (j in 10:21){
-      
-      temp[i,j] <- temp[i,j-1]*Seas_adjQ[ Seas_adjQ$asin == temp$asin[i], 
-                                          as.character(as.Date(colnames(temp)[j]) - 364) ]
-      
-    }
-  }
-}
-
-pred_original <- pred_df_holt_damp_beta
-
-#assigning new values to pred DF
-for (i in 1:nrow(temp)){
-  
-  pred_df_holt_damp_beta[which(pred_df_holt_damp_beta$asin == temp$asin[i] ),] <- temp[i,] 
-  
-}
-
+#pred_df_holt_damp_beta <- TopTitlesAdjustment(pred_df_holt_damp_beta, Q1)
 
 
 #Replacing negative predictions with 0 and rounding all predictions to closest number

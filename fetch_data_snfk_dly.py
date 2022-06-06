@@ -9,8 +9,8 @@ from __future__ import print_function
 import os
 import sys
 
-#country_var = sys.argv[1]
-country_var = 'us'
+country_var = sys.argv[1]
+#country_var = 'uk'
 
 os.chdir('C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
 #os.chdir('C:\\dev\\env\\dkwebsols-forecasting-12w-22ef3797943e')
@@ -34,6 +34,7 @@ import psycopg2
 from config import Config
 from configparser import ConfigParser
 import csv
+
 
 
 def config(filename='database.ini', section='snowflake_db'):
@@ -82,43 +83,6 @@ def connect():
         print(db_version, ' \n ')
         
 
-
-        sql_context = """
-        select
-            c.week_end_date, lower(a.country) as country,
-            b.asin, b.material as isbn, b.title_full as title,
-            CASE
-                WHEN imprint_desc ilike '%%Garrick Street Press%%' THEN 'Garrick Street Press'
-                WHEN imprint_desc ilike '%%0-9%%' or imprint_desc ilike '%%0 - 9%%' THEN 'Children 0-9'
-                WHEN imprint_desc ilike '%%Licensi%%' THEN 'Licensing'
-                WHEN imprint_desc ilike '%%Adult%%' AND imprint_desc ilike '%%Knowledg%%' THEN 'Knowledge Adult'
-                WHEN imprint_desc ilike '%%Children%%' AND imprint_desc ilike '%%Knowledg%%' THEN 'Knowledge Children'
-                WHEN imprint_desc ilike '%%Alpha%%' THEN 'Alpha'
-                WHEN imprint_desc ilike '%%Life%%' THEN 'Life'
-                WHEN imprint_desc ilike '%%Travel%%' THEN 'Travel'
-                ELSE 'Others'
-                END AS division,
-            b.imprint_desc as imprint, b.onsale_date as pub_date,
-            sum(a.qty_ord) as units
-            from PRH_GLOBAL.PUBLIC.F_REGION_POS_SALES a
-            left join PRH_GLOBAL.PUBLIC.D_REGION_PROD b ON a.prod_key = b.prod_key and a.region_code = b.region_code
-            left join PRH_GLOBAL..D_region_date c on a.sale_date = c.date
-            where b.company = 'DK' and lower(a.country) = '%s' and c.week_end_date = '%s'
-                    and a.POS_ACCT in ('A4', 'AMZ') and format != 'EL'
-            group by 1,2,3,4,5,6,7,8
-            order by 9 desc NULLS LAST
-        
-        """ % (country_var,last_saturday)
-        
-        cur.execute(sql_context)
-    
-        # Fetch all rows from database
-        record = cur.fetchall()
-        
-        #Checking if latest data is available
-        if not record :
-            print('No Sales Data')
-            raise LatestDataCheck()
         
         sql_context = """
             with sub as ( select  b.region_code, b.prod_key,  sum(qty_ord) from PRH_GLOBAL.PUBLIC.F_REGION_POS_SALES a
@@ -159,7 +123,7 @@ def connect():
                     on a.sale_date = c.date
                 where
                     extract(year from a.sale_date) >= '2017' and
-                    a.sale_date <= (SELECT MAX(WEEK_END_DATE) FROM PRH_GLOBAL.PUBLIC.F_REGION_POS_SALES_WK WHERE lower(REGION_CODE) = '%s' and POS_ACCT = 'AMZ') and
+                    a.sale_date <= (SELECT MAX(WEEK_END_DATE) FROM PRH_GLOBAL.PUBLIC.F_REGION_POS_SALES_WK WHERE lower(REGION_CODE) = '%s' and POS_ACCT in ('A4', 'AMZ') ) and
                     b.company = 'DK' and
                     lower(a.country) = '%s' and
                     a.POS_ACCT in ('A4', 'AMZ') and

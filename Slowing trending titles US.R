@@ -38,6 +38,7 @@ pred_date <- Sys.Date() + 6 - match(weekdays(Sys.Date()), all_days) - 7
 
 #Importing Data
 Sales_US <- read.csv("Sales US.csv", header = T, stringsAsFactors = FALSE)
+colnames(Sales_US) <- tolower(colnames(Sales_US))
 Sales_US$date <- as.Date(Sales_US$date)
 Sales_US <- Sales_US[Sales_US$title != "",]
 
@@ -141,6 +142,6 @@ freezePane(
 
 saveWorkbook(wb, paste0("Slowing trending titles US - ",pred_date +7,".xlsx"), overwrite = T) 
 
-cat("Slowing Trending Titles start\n")
+cat("Slowing Trending Titles end\n")
 
 
