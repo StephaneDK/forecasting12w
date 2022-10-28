@@ -42,7 +42,7 @@ convert.brackets <- function(x){
   }
 }
 
-current_quarter <- c("Q1","Q2")
+current_quarter <- c("Q4")
 
 #Setting the directory where all files will be used from for this project
 setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
@@ -66,15 +66,15 @@ Sales_US <- Sales_US %>%
 Q1 <- Sales_US
 
 #Importing and clean Reprint Data
-Reprint <- read.csv("US Inventory.csv", header = T, stringsAsFactors = FALSE)
+Reprint <- read.csv("US Inventory.csv", header = T, stringsAsFactors = FALSE) #colnames(Reprint)
 Reprint <- Reprint %>%
   select(ASIN, 
          Product.Title,
-         Amazon.Net.Inventory..Sellable.On.Hand.Units.,
+         Amazon.Net.Inventory.Sellable.On.Hand.Units, # Amazon.Net.Inventory..Sellable.On.Hand.Units.   or      Sellable.On.Hand.Units  
          DK.Net.Inventory, #DK.Net.Inventory or DK.Inventory
-         DK.Delivery.Date, #DK.Reprint.Date or DK.Delivery.Date
-         Open.Purchase.Order.Quantity, # DK.Open.Order.Quantity  or Open.Purchase.Order.Quantity
-         DK.Open.Order.QTY #DK.Open.Order.Qty or DK.Reprint.Quantity
+         Delivery.Date, #DK.Reprint.Date or DK.Delivery.Date
+         Open.Purchase.Order.Qty, # DK.Open.Order.Quantity  or Open.Purchase.Order.Quantity
+         Open.Order.Qty #DK.Open.Order.Qty or DK.Reprint.Quantity
   ) %>%
   set_colnames(c("asin",
                  "title",
@@ -85,7 +85,7 @@ Reprint <- Reprint %>%
                  "Reprint Qty"))  %>%
   mutate(Reprint.Date = as.Date(Reprint.Date, format = "%d/%m/%Y"),
          `Amz inv` =  suppressWarnings(as.numeric(gsub(",","",`Amz inv`))),
-         `TBS inv` =  gsub(" ","",`TBS inv`) %>%  gsub(",","",.)  %>% gsub("\\b-\\b","0",.) %>% sapply( ., convert.brackets, USE.NAMES = F) %>% as.numeric(.),
+         `TBS inv` =  gsub(" ","",`TBS inv`) %>%  gsub(",","",.) %>% as.numeric(.), #%>% gsub("\\b-\\b","0",.) %>% sapply( ., convert.brackets, USE.NAMES = F) ,
          `Reprint Qty` =  suppressWarnings(as.numeric(gsub(",","",`Reprint Qty`))),
          `AMZ Open Orders` =  suppressWarnings(as.numeric(gsub(",","",`AMZ Open Orders`))),
          `Reprint Qty` = replace(`Reprint Qty`, is.na(`Reprint Qty`), NaN),
@@ -106,7 +106,12 @@ colnames(Print_status) <- c(  "isbn", "Print_status")
 
 Q_iso <- readRDS("Q_iso_US.csv")
 
-#Q_iso <- rbind.data.frame(Q_iso, c("0241459001","9780241459003","Baby's First Easter","Q2")  )
+
+#Adding seasonal titles manually (if missing)
+Q_iso <- rbind.data.frame(Q_iso, c("0241459001","9780241459003","Baby's First Easter","Q2")  )
+Q_iso <- rbind.data.frame(Q_iso, c("146546235X","9781465462350","Baby Touch and Feel: Halloween","Q4")  )
+Q_iso <- rbind.data.frame(Q_iso, c("1465452761","9781465452764","Pop-Up Peekaboo! Pumpkin","Q4")  )
+Q_iso <- rbind.data.frame(Q_iso, c("0744033837","9780744033830","The Happy Pumpkin","Q4")  )
 
 
 #Creating computational statistics ---------------------------------------------------------------------------------------------------
@@ -164,24 +169,24 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
   
 }
 
+#-----------------------------------------------------------------------------------------------------------------------
+#                                 Christmas period adjustment
+#-----------------------------------------------------------------------------------------------------------------------
 
-
-
-
+pred_df_holt_damp_beta <- ChristmasAdjustment(pred_df_holt_damp_beta, Q1)
 
 #-----------------------------------------------------------------------------------------------------------------------
 #                                 Seasonal titles adjustment
 #-----------------------------------------------------------------------------------------------------------------------
 
-
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% Q_iso$asin, ]
-prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-01-01", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-03-19", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 55 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol = 66 , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
@@ -225,10 +230,13 @@ Seas_adjQ[,3:ncol(Seas_adjQ)] <- round(Seas_adjQ[,3:ncol(Seas_adjQ)],3)
 Seas_adjQ <- Seas_adjQ[ Seas_adjQ$asin %in% subset(Q_iso, Q_iso$Season %in% current_quarter)$asin ,]
 Seas_adjQ <- arrange(Seas_adjQ, desc(Seas_adjQ$asin))
 
+
+
 pred_df_holt_damp_beta <- arrange(pred_df_holt_damp_beta, desc(pred_df_holt_damp_beta$asin)) 
 
 #Seasonal adjustment loop
 for (i in 1:nrow(pred_df_holt_damp_beta)){
+ 
   
   if (pred_df_holt_damp_beta$asin[i] %in% Seas_adjQ$asin ){
     
@@ -257,12 +265,6 @@ for ( i in 1:nrow(pred_df_holt_damp_beta)){
 
 #Manual adjustment for books with PR campaigns or sudden sales spikes (not used)
 
-
-#-----------------------------------------------------------------------------------------------------------------------
-#                                 Christmas period adjustment
-#-----------------------------------------------------------------------------------------------------------------------
-
-#pred_df_holt_damp_beta <- ChristmasAdjustment(pred_df_holt_damp_beta, Q1)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -527,10 +529,13 @@ setColWidths(wb, "US",  cols = 34, widths = 10)
 
 # Highlighting rows
 yellow_style <- createStyle(fgFill="#FFFF00")
-y <- which( colnames(pred_df_holt_damp_beta)=="Inv.issue" )
-x <- which( pred_df_holt_damp_beta$Inv.issue ==1 )
-addStyle(wb, sheet="US", style=yellow_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
+x <- which( pred_df_holt_damp_beta$Inv.issue ==1 & pred_df_holt_damp_beta$Print_status %notin% c( "No Reprints Sched.", "Out of Stock Indef.", "Out of Print" ) )
+              addStyle(wb, sheet="US", style=yellow_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
          gridExpand=TRUE, stack = TRUE) # +1 for header line
+
+x <- which( pred_df_holt_damp_beta$WOH_AMZ %in% c(1,2,3)  & pred_df_holt_damp_beta$Print_status %notin% c( "No Reprints Sched.", "Out of Stock Indef.", "Out of Print" ))
+addStyle(wb, sheet="US", style=orange_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
+         gridExpand=TRUE, stack = TRUE) # +1 for header line              
 
 # # Highlighting rows in light green for Hitlist
 # green_style <- createStyle(fgFill="#90EE90")
@@ -666,3 +671,4 @@ write.csv(write_db, "Q1 Forecast us.csv",row.names = FALSE, quote = FALSE)
 pred_df_holt_damp_beta$`Reprint Qty` <- NULL
 saveRDS(pred_df_holt_damp_beta, "pred_df_holt_damp_beta_US.rds")
 
+cat("\nForecast end\n")

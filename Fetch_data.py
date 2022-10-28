@@ -90,18 +90,28 @@ def connect():
         
         #Checking if latest data is available
         if not record :
-            raise LatestDataCheck()
+           raise LatestDataCheck()
         
-        sql_context = """
-        SELECT * FROM public.vw_amazon_sales_traffic_display
-        WHERE country = '%s' and title IS NOT NULL
-        """% country_var
+        #sql_context = """
+        #SELECT * FROM public.vw_amazon_sales_traffic_display
+        #WHERE country = '%s' and title IS NOT NULL
+        #"""% country_var
 
-        #SELECT a.* FROM public.vw_amazon_sales_traffic_display a 
-        #left join b3.onix_b3 b on a.asin= b.isbn10
-        #WHERE a.country = 'uk' and a.title IS NOT NULL and b.product_types not ilike '%audio%' 
-        #and b.product_types not ilike '%digital%' and b.product_types IS NOT NULL 
-        
+        TYPE1 = "%audio%"
+        TYPE2 = "%digital%"
+
+        if country_var == "uk":
+            TYPE3 = "GB"
+        elif country_var == "us":
+            TYPE3 = "US"
+
+        sql_context = """
+        SELECT a.* FROM public.vw_amazon_sales_traffic_display a 
+        left join b3.onix_b3 b on a.asin= b.isbn10
+        WHERE a.country = '%s' and b.country = '%s' and a.title IS NOT NULL and b.product_types not ilike '%s' 
+        and b.product_types not ilike '%s' and b.product_types IS NOT NULL 
+        """% (country_var, TYPE3, TYPE1, TYPE2)
+
         cur.execute(sql_context)
     
         # Fetch all rows from database

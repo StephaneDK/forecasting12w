@@ -1,5 +1,7 @@
 library.path <- .libPaths("C:/Users/steph/Documents/R/win-library/4.0")
 source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\OutsideBorders.R")
+source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\ChristmasAdjustment.R")
+source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\TopTitlesAdjustment.R")
 
 cat("\nForecast start\n")
 
@@ -40,7 +42,7 @@ convert.brackets <- function(x){
   }
 }
 
-current_quarter <- c("Q1","Q2")
+current_quarter <- c("Q4")
 
 #Setting the directory where all files will be used from for this project
 setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
@@ -72,7 +74,7 @@ Reprint <- Reprint %>%
                   Reprint.Dates, 
                   Open.Purchase.Order.Quantity, 
                   B3.Status, 
-                  contains("Priority.Status"),#Focus.List.Current.Status
+                  Focus.Status,#Focus.List.Current.Status
                   Reprint.Quantity 
                   ) %>%
            set_colnames(c("asin", 
@@ -94,10 +96,16 @@ Reprint <- Reprint %>%
                   )  %>%
            mutate(Reprint.Date = Reprint.Date + 6 - match(weekdays(Reprint.Date), all_days))
 
-
 #Import seasonal titles --------------------------------------------------------------------------------------------------
 
 Q_iso <- readRDS("Q_iso_UK.csv")
+
+
+#Adding seasonal titles manually (if missing)
+Q_iso <- rbind.data.frame(Q_iso, c("0241287790","9780241287798","Baby Touch and Feel: Halloween","Q4")  )
+Q_iso <- rbind.data.frame(Q_iso, c("0241484340","9780241484340","The Happy Pumpkin","Q4")  )
+
+
 
 #Creating computational statistics ---------------------------------------------------------------------------------------------------
 
@@ -169,6 +177,12 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
   
 }
 
+#-----------------------------------------------------------------------------------------------------------------------
+#                                 Christmas period adjustment
+#-----------------------------------------------------------------------------------------------------------------------
+
+pred_df_holt_damp_beta <- ChristmasAdjustment(pred_df_holt_damp_beta, Q1)
+
 
 
 
@@ -178,16 +192,17 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% Q_iso$asin, ]
-prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-01-01", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-03-19", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 55 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol = 66 , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
 Seas_adjQ$title <- prev_year$title
+
 
 
 
@@ -216,8 +231,6 @@ Seas_adjQ[Seas_adjQ == Inf] <- 1
 
 #manual adjustment on existing seasonal titles
 #Seas_adjQ[Seas_adjQ$asin == "0241377978",3:16]  <- c( 1, 1.6, 1, 1.5, 1.2, 1.2, 1.5, 0.27, 0.44, 0.75, 0.66, 1, 1, 1 )
-
-#manual adjustment on existing seasonal titles
 #Seas_adjQ[Seas_adjQ$asin == "0241283477",3:16]  <- c(1, 0.76, 0.83, 1.2, 1.65, 1.18, 1.60, 0.18,  0.99, 0.96, 1.02, 1.38, 1.02, 1.47) 
 
 #Rounding to 3 decimal places
@@ -269,12 +282,6 @@ for ( i in 1:nrow(pred_df_holt_damp_beta)){
 #Manual adjustment for books with PR campaigns or sudden sales spikes (not used now)
 
 
-
-#-----------------------------------------------------------------------------------------------------------------------
-#                                 Christmas period adjustment
-#-----------------------------------------------------------------------------------------------------------------------
-
-#pred_df_holt_damp_beta <- ChristmasAdjustment(pred_df_holt_damp_beta, Q1)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -533,9 +540,15 @@ setColWidths(wb, "UK",  cols = 34, widths = 10)
 
 # Highlighting rows in yellow for inventory issue
 yellow_style <- createStyle(fgFill="#FFFF00")
-y <- which( colnames(pred_df_holt_damp_beta)=="Inv_issue" )
-x <- which( pred_df_holt_damp_beta$Inv_issue ==1 )
+orange_style <- createStyle(fgFill="#FFA500")
+
+#y <- which( colnames(pred_df_holt_damp_beta)=="Inv_issue" )
+x <- which( pred_df_holt_damp_beta$Inv_issue ==1  & pred_df_holt_damp_beta$`Print Status`!= "Out of Print")
 addStyle(wb, sheet="UK", style=yellow_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
+         gridExpand=TRUE, stack = TRUE) # +1 for header line
+
+x <- which( pred_df_holt_damp_beta$WOH_AMZ %in% c(1,2,3)  & pred_df_holt_damp_beta$`Print Status`!= "Out of Print")
+addStyle(wb, sheet="UK", style=orange_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
          gridExpand=TRUE, stack = TRUE) # +1 for header line
 
 # # Highlighting rows in light green for Hitlist
@@ -675,5 +688,5 @@ write.csv(write_db, "Q1 Forecast uk.csv", row.names = FALSE, quote = FALSE)
 pred_df_holt_damp_beta$`Reprint Qty` <- NULL
 saveRDS(pred_df_holt_damp_beta, "pred_df_holt_damp_beta_UK.rds")
 
-
+cat("\nForecast end\n")
 

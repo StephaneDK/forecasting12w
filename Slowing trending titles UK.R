@@ -75,7 +75,7 @@ Q1 <- dcast(DF, asin + isbn + title + Division + Publication ~ date, value.var="
 
 
 
-DF <- merge(forecasts, Q1, by = "asin", all.x = TRUE)
+DF <- merge(forecasts, Q1, by = "isbn", all.x = TRUE)
 
 
 DF$Error <-   DF[,c(11)] - DF[,c(ncol(DF) )]
@@ -83,11 +83,9 @@ DF$Error <-   DF[,c(11)] - DF[,c(ncol(DF) )]
 DF2 <- DF[,c(1:5,(11), (ncol(DF) - 1) ,  grep("Error", colnames(DF)) )]
 colnames(DF2) <- c("asin", "isbn", "Title", "Division", "Publication", "Forecast", "Actual",  "Error")
 
-DF2$Publication <- as.Date(DF2$Publication, format = "%m/%d/%Y")
 
 DF2$Actual[is.na(DF2$Actual)] <- 0
 DF2$Error[is.na(DF2$Error)] <- 0
-
 
 
 
@@ -117,9 +115,11 @@ addFilter(wb, "UK", rows = 1, cols = 1:ncol(DF2))
 width_vec <- suppressWarnings(apply(DF2, 2, function(x) max(nchar(as.character(x)) + 1, na.rm = TRUE)))
 width_vec_header <- nchar(colnames(DF2))  + 4
 max_vec_header <- pmax(width_vec, width_vec_header)
-setColWidths(wb, "UK",  cols = 1, widths = 13)
-setColWidths(wb, "UK",  cols = 2, widths = 15)
-setColWidths(wb, "UK",  cols = 3, widths = 50)
+setColWidths(wb, "UK",  cols = 1, widths = 16)
+setColWidths(wb, "UK",  cols = 2, widths = 12)
+setColWidths(wb, "UK",  cols = 3, widths = 65)
+setColWidths(wb, "UK",  cols = 4, widths = 20)
+setColWidths(wb, "UK",  cols = 5, widths = 13)
 setColWidths(wb, "UK",  cols = 6, widths = 8)
 
 #Centering cells
@@ -155,6 +155,6 @@ freezePane(
 saveWorkbook(wb, paste0("Slowing trending titles UK - ",pred_date +7,".xlsx"), overwrite = T) 
 
 
-cat("Slowing Trending Titles start\n")
+cat("Slowing Trending Titles end\n")
 
 

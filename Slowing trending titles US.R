@@ -71,7 +71,7 @@ colnames(DF) <- c("date","asin","isbn","title","Division","Publication","units")
 Q1 <- dcast(DF, asin + isbn + title + Division + Publication ~ date, value.var="units", fun.aggregate = sum)
 
 
-DF <- merge(forecasts, Q1, by = "asin", all.x = TRUE)
+DF <- merge(forecasts, Q1, by = "isbn", all.x = TRUE)
 
 DF$Error <- DF[,11] - DF[,ncol(DF)] 
 
@@ -105,9 +105,11 @@ addFilter(wb, "US", rows = 1, cols = 1:ncol(DF2))
 width_vec <- suppressWarnings(apply(DF2, 2, function(x) max(nchar(as.character(x)) + 1, na.rm = TRUE)))
 width_vec_header <- nchar(colnames(DF2))  + 4
 max_vec_header <- pmax(width_vec, width_vec_header)
-setColWidths(wb, "US",  cols = 1, widths = 13)
-setColWidths(wb, "US",  cols = 2, widths = 15)
-setColWidths(wb, "US",  cols = 3, widths = 50)
+setColWidths(wb, "US",  cols = 1, widths = 16)
+setColWidths(wb, "US",  cols = 2, widths = 12)
+setColWidths(wb, "US",  cols = 3, widths = 65)
+setColWidths(wb, "US",  cols = 4, widths = 20)
+setColWidths(wb, "US",  cols = 5, widths = 13)
 setColWidths(wb, "US",  cols = 6, widths = 8)
 
 #Centering cells

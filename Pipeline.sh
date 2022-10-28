@@ -4,6 +4,7 @@ country="us"
 
 #outputString=$(python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Fetch_data.py" $country 2>qtemp);
 outputString=$(python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\fetch_data_snfk_dly.py" $country 2>qtemp);
+
 stderrString=$(<qtemp);
 echo "$outputString"
 
@@ -16,11 +17,11 @@ fi
 if [[ $country == "uk" ]]; then
     Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Slowing trending titles UK.R" 
     Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Full Year Forecast UK.R" 
-    Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Blacklist UK.R" 
+    #Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Blacklist UK.R" 
 elif [[ $country == "us" ]]; then
     Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Slowing trending titles US.R"
     Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Full Year Forecast US.R"
-    Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Blacklist US.R" 
+    #Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Blacklist US.R" 
      
      
 fi

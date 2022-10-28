@@ -33,7 +33,7 @@ ChristmasAdjustment <- function(pred_df_holt_damp_beta, Q1){
 xmas_sales <- Q1
 xmas_sales <- xmas_sales[,c(1:5,grep(as.character(as.Date(colnames(pred_df_holt_damp_beta[6])) - 364), colnames(xmas_sales) ):
                               grep(as.character(as.Date(colnames(pred_df_holt_damp_beta[21])) - 364), colnames(xmas_sales)) )]
-xmas_sales <- xmas_sales[xmas_sales$Publication <= "2020-10-01",]
+xmas_sales <- xmas_sales[xmas_sales$Publication <= "2021-10-01",]
 
 #Deleting seasonal, highly influential titles
 xmas_sales <- xmas_sales[!(xmas_sales$isbn %in% c("9781465462350", "9781465452764", "9781465483614") ),]
@@ -68,12 +68,12 @@ for (i in 1:nrow(xmas_change_per)){
 #Seasonal adjustment loop (only between Nov 08 2021 and Jan 15 2022)
 for (i in 1:nrow(pred_df_holt_damp_beta)){
   
-  if (pred_df_holt_damp_beta$isbn[i] %notin% c("9781465462350", "9781465452764") ){
+  if (pred_df_holt_damp_beta$isbn[i] %notin% c("9781465462350", "9781465452764", "9781465483614") ){
     
     for (j in 10:21){
       
-      if (as.Date(colnames(pred_df_holt_damp_beta)[j]) >= "2021-11-08" &
-          as.Date(colnames(pred_df_holt_damp_beta)[j]) <= "2022-01-15" )
+      if (as.Date(colnames(pred_df_holt_damp_beta)[j]) >= "2022-11-08" &
+          as.Date(colnames(pred_df_holt_damp_beta)[j]) <= "2023-01-15" )
         
         pred_df_holt_damp_beta[i,j] <- ceiling(pred_df_holt_damp_beta[i,j-1]*
                                                  xmas_change_per[ xmas_change_per$Group.1 == pred_df_holt_damp_beta$Division[i],
