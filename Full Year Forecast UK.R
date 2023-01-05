@@ -66,15 +66,15 @@ Sales_UK <- Sales_UK %>%
 Q1 <- Sales_UK
 
 #Importing and clean Reprint and AA Data
-Reprint <- read.csv("UK Inventory.csv", header = T, stringsAsFactors = FALSE)
+Reprint <- read.csv("UK Inventory.csv", header = T, stringsAsFactors = FALSE) #sort(colnames(Reprint))
 Reprint <- Reprint %>%
            select(ASIN, 
-                  Available.Inventory, 
+                  Amazon.On.Hand.Report...14th.Dec, #Amazon.On.Hand.Report     OR    Available.Inventory
                   Stock.at.TBS, 
                   Reprint.Dates, 
                   Open.Purchase.Order.Quantity, 
                   B3.Status, 
-                  Focus.Status,#Focus.List.Current.Status
+                  Amazon.Focus.Status...19.10,#Focus.List.Current.Status
                   Reprint.Quantity 
                   ) %>%
            set_colnames(c("asin", 
@@ -95,6 +95,9 @@ Reprint <- Reprint %>%
                   asin = case_when(nchar(asin) == 9 ~ paste0("0",asin),TRUE ~ asin)
                   )  %>%
            mutate(Reprint.Date = Reprint.Date + 6 - match(weekdays(Reprint.Date), all_days))
+
+#View(Reprint)
+
 
 #Import seasonal titles --------------------------------------------------------------------------------------------------
 
@@ -192,12 +195,12 @@ pred_df_holt_damp_beta <- ChristmasAdjustment(pred_df_holt_damp_beta, Q1)
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% Q_iso$asin, ]
-prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-03-19", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-06-18", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 66 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol =  ncol(prev_year) , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
@@ -542,14 +545,17 @@ setColWidths(wb, "UK",  cols = 34, widths = 10)
 yellow_style <- createStyle(fgFill="#FFFF00")
 orange_style <- createStyle(fgFill="#FFA500")
 
+
+
+x <- which( pred_df_holt_damp_beta$WOH_AMZ %in% c(1,2)  & pred_df_holt_damp_beta$`Print Status`!= "Out of Print")
+addStyle(wb, sheet="UK", style=orange_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
+         gridExpand=TRUE, stack = TRUE) # +1 for header line
+
 #y <- which( colnames(pred_df_holt_damp_beta)=="Inv_issue" )
 x <- which( pred_df_holt_damp_beta$Inv_issue ==1  & pred_df_holt_damp_beta$`Print Status`!= "Out of Print")
 addStyle(wb, sheet="UK", style=yellow_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
          gridExpand=TRUE, stack = TRUE) # +1 for header line
 
-x <- which( pred_df_holt_damp_beta$WOH_AMZ %in% c(1,2,3)  & pred_df_holt_damp_beta$`Print Status`!= "Out of Print")
-addStyle(wb, sheet="UK", style=orange_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
-         gridExpand=TRUE, stack = TRUE) # +1 for header line
 
 # # Highlighting rows in light green for Hitlist
 # green_style <- createStyle(fgFill="#90EE90")

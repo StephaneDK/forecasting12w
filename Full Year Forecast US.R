@@ -29,7 +29,7 @@ suppressMessages({
 
 options(warn = oldw)
 
-options(scipen=999, digits = 3, error=function() { traceback(2); if(!interactive()) quit("no", status = 1, runLast = FALSE) } )
+options(scipen=999, digits = 3 )
 all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
 
 `%notin%` <- Negate(`%in%`)
@@ -42,7 +42,7 @@ convert.brackets <- function(x){
   }
 }
 
-current_quarter <- c("Q4")
+current_quarter <- c("Q1")
 
 #Setting the directory where all files will be used from for this project
 setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
@@ -66,15 +66,15 @@ Sales_US <- Sales_US %>%
 Q1 <- Sales_US
 
 #Importing and clean Reprint Data
-Reprint <- read.csv("US Inventory.csv", header = T, stringsAsFactors = FALSE) #colnames(Reprint)
+Reprint <- read.csv("US Inventory.csv", header = T, stringsAsFactors = FALSE) #sort(colnames(Reprint))
 Reprint <- Reprint %>%
   select(ASIN, 
          Product.Title,
-         Amazon.Net.Inventory.Sellable.On.Hand.Units, # Amazon.Net.Inventory..Sellable.On.Hand.Units.   or      Sellable.On.Hand.Units  
+         Amazon.Net.Inventory..Sellable.On.Hand.Units., # Amazon.Net.Inventory..Sellable.On.Hand.Units.   or      Sellable.On.Hand.Units  
          DK.Net.Inventory, #DK.Net.Inventory or DK.Inventory
-         Delivery.Date, #DK.Reprint.Date or DK.Delivery.Date
-         Open.Purchase.Order.Qty, # DK.Open.Order.Quantity  or Open.Purchase.Order.Quantity
-         Open.Order.Qty #DK.Open.Order.Qty or DK.Reprint.Quantity
+         DK.Delivery.Date, #DK.Reprint.Date or DK.Delivery.Date
+         Open.Purchase.Order.Quantity, # DK.Open.Order.Quantity  or Open.Purchase.Order.Quantity
+         DK.Open.Order.QTY #DK.Open.Order.Qty or DK.Reprint.Quantity
   ) %>%
   set_colnames(c("asin",
                  "title",
@@ -85,7 +85,7 @@ Reprint <- Reprint %>%
                  "Reprint Qty"))  %>%
   mutate(Reprint.Date = as.Date(Reprint.Date, format = "%d/%m/%Y"),
          `Amz inv` =  suppressWarnings(as.numeric(gsub(",","",`Amz inv`))),
-         `TBS inv` =  gsub(" ","",`TBS inv`) %>%  gsub(",","",.) %>% as.numeric(.), #%>% gsub("\\b-\\b","0",.) %>% sapply( ., convert.brackets, USE.NAMES = F) ,
+         `TBS inv` =   gsub(" ","",`TBS inv`) %>%  gsub(",","",.) %>% sapply( ., convert.brackets, USE.NAMES = F) %>% as.numeric(.), #%>% gsub("\\b-\\b","0",.) %>% sapply( ., convert.brackets, USE.NAMES = F) ,
          `Reprint Qty` =  suppressWarnings(as.numeric(gsub(",","",`Reprint Qty`))),
          `AMZ Open Orders` =  suppressWarnings(as.numeric(gsub(",","",`AMZ Open Orders`))),
          `Reprint Qty` = replace(`Reprint Qty`, is.na(`Reprint Qty`), NaN),
@@ -93,6 +93,9 @@ Reprint <- Reprint %>%
   ) %>%
   mutate(Reprint.Date = Reprint.Date + 6 - match(weekdays(Reprint.Date), all_days))
 
+
+#sort(colnames(Reprint))
+#View(Reprint)
 
 #Import AA Data
 AA_status <-  read.csv("AA Status US.csv", header = T, stringsAsFactors = FALSE)
@@ -181,12 +184,12 @@ pred_df_holt_damp_beta <- ChristmasAdjustment(pred_df_holt_damp_beta, Q1)
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% Q_iso$asin, ]
-prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-03-19", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-06-18", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
 #Create empty data frame to store seasonal percentage changes
-Seas_adjQ <- data.frame(matrix(ncol = 66 , nrow = nrow(prev_year)))
+Seas_adjQ <- data.frame(matrix(ncol = ncol(prev_year) , nrow = nrow(prev_year)))
 colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
@@ -243,12 +246,11 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
     for (j in 10:21){
       
       pred_df_holt_damp_beta[i,j] <- pred_df_holt_damp_beta[i,j-1]*Seas_adjQ[ Seas_adjQ$asin == pred_df_holt_damp_beta$asin[i], 
-                                                                              as.character(as.Date(colnames(pred_df_holt_damp_beta)[j]) - 364) ]
+                                                                              as.character(as.Date(colnames(pred_df_holt_damp_beta)[j]) - 364 ) ]
       
     }
   }
 }
-
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -527,15 +529,18 @@ setColWidths(wb, "US",  cols = 34, widths = 10)
 
 
 
+orange_style <- createStyle(fgFill="#FFA500")
+x <- which( pred_df_holt_damp_beta$WOH_AMZ %in% c(1,2)  & pred_df_holt_damp_beta$Print_status %notin% c( "No Reprints Sched.", "Out of Stock Indef.", "Out of Print", "Remainder" ))
+addStyle(wb, sheet="US", style=orange_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
+         gridExpand=TRUE, stack = TRUE) # +1 for header line     
+
+
 # Highlighting rows
 yellow_style <- createStyle(fgFill="#FFFF00")
-x <- which( pred_df_holt_damp_beta$Inv.issue ==1 & pred_df_holt_damp_beta$Print_status %notin% c( "No Reprints Sched.", "Out of Stock Indef.", "Out of Print" ) )
-              addStyle(wb, sheet="US", style=yellow_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
+x <- which( pred_df_holt_damp_beta$Inv.issue ==1 & pred_df_holt_damp_beta$Print_status %notin% c( "No Reprints Sched.", "Out of Stock Indef.", "Out of Print", "Remainder" ) )
+addStyle(wb, sheet="US", style=yellow_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
          gridExpand=TRUE, stack = TRUE) # +1 for header line
 
-x <- which( pred_df_holt_damp_beta$WOH_AMZ %in% c(1,2,3)  & pred_df_holt_damp_beta$Print_status %notin% c( "No Reprints Sched.", "Out of Stock Indef.", "Out of Print" ))
-addStyle(wb, sheet="US", style=orange_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
-         gridExpand=TRUE, stack = TRUE) # +1 for header line              
 
 # # Highlighting rows in light green for Hitlist
 # green_style <- createStyle(fgFill="#90EE90")
