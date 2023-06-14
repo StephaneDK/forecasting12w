@@ -10,7 +10,7 @@ import os
 import sys
 
 country_var = sys.argv[1]
-#country_var = 'uk'
+#country_var = 'us'
 
 os.chdir('C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
 #os.chdir('C:\\dev\\env\\dkwebsols-forecasting-12w-22ef3797943e')
@@ -123,7 +123,7 @@ def connect():
                     on a.sale_date = c.date
                 where
                     extract(year from a.sale_date) >= '2017' and
-                    a.sale_date <= (SELECT MAX(WEEK_END_DATE) FROM PRH_GLOBAL.PUBLIC.F_REGION_POS_SALES_WK WHERE lower(REGION_CODE) = '%s' and POS_ACCT in ('A4', 'AMZ') ) and
+                    a.sale_date <=  DATE_TRUNC('week', CURRENT_DATE)  - INTERVAL '2 DAY' and
                     b.company = 'DK' and
                     lower(a.country) = '%s' and
                     a.POS_ACCT in ('A4', 'AMZ') and
@@ -131,7 +131,7 @@ def connect():
             group by 1,2,3,4,5,6,7,8
             order by 1 desc, 9 desc
 
-        """% (country_var, country_var,country_var)
+        """% (country_var, country_var)
         
         cur.execute(sql_context)
     
@@ -153,8 +153,8 @@ def connect():
         sql_context = """
         select material as isbn, sales_status_desc
         from PRH_GLOBAL.PUBLIC.D_REGION_PROD
-        where region_code = 'US' and company = 'DK' and format not in ('EL', 'DN')
-        """
+        where lower(region_code) = '%s' and company = 'DK' and format not in ('EL', 'DN')
+        """% (country_var)
         
         cur.execute(sql_context)
     
@@ -167,7 +167,7 @@ def connect():
             raise LatestDataCheck()
 
         #Writing csv file
-        with open('Print Status US.csv', 'w') as f:
+        with open('Print Status %s.csv'% (country_var), 'w') as f:
             column_names = [i[0] for i in cur.description]
             file = csv.writer(f, lineterminator = '\n')
             file.writerow(column_names)
@@ -179,10 +179,10 @@ def connect():
 
         #Getting AA status
         sql_context = """
-        select asin, curr_status 
+        select isbn, curr_status  
         from PRH_GLOBAL_DK_SANDBOX..VW_AMAZON_PRIORITY_LIST
-        where country = 'us'
-        """
+        where country = '%s'
+        """% (country_var)
         
         cur.execute(sql_context)
     
@@ -195,23 +195,80 @@ def connect():
             raise LatestDataCheck()
 
         #Writing csv file
-        with open('AA Status US.csv', 'w') as f:
+        with open('AA Status %s.csv'% (country_var), 'w') as f:
             column_names = [i[0] for i in cur.description]
             file = csv.writer(f, lineterminator = '\n')
             file.writerow(column_names)
             file.writerows(record)   
             print('Latest AA status data saved \n')
 
+ 
 
 
-        
 
-        #Getting Amazon scrape info
+        #Getting AMZ INV
         sql_context = """
-        select asin, availability_text
-        from PRH_GLOBAL_DK_SANDBOX..AMZ_PRODUCT_PAGE
-        where date_of_extraction = '%s' AND lower(country) = '%s'
-        """% (last_saturday, country_var)
+        with sub as ( 
+
+            select  b.region_code, b.prod_key, b.title_full, b.material, b.asin, sum(qty_ord) 
+            
+            from PRH_GLOBAL.PUBLIC.F_REGION_POS_SALES a
+            left join PRH_GLOBAL.PUBLIC.D_REGION_PROD b
+            
+            ON a.prod_key = b.prod_key and a.region_code = b.region_code
+            
+            WHERE lower(a.country) = '%s' and  b.company = 'DK' and a.POS_ACCT in ('A4', 'AMZ') and
+                format NOT IN ('EL','DN', 'EBK') and
+                sale_date >= CURRENT_DATE - 28
+            group by 1,2,3,4,5
+            HAVING sum(qty_ord) > 5
+        )
+
+        , AMZ_INV as (
+
+            select 
+                a.country, b.asin ,b.material, b.title_full, 
+                sum(available_inventory) as AMZ_INV,
+                sum(open_purchase_order_quantity) as AMZ_Open_Orders
+            
+            from PRH_GLOBAL.PUBLIC.F_REGION_AMZ_FORECAST a
+            join PRH_GLOBAL.PUBLIC.D_REGION_PROD b ON a.prod_key = b.prod_key and a.country = b.region_code        
+            
+            where 
+                b.company = 'DK' 
+                and lower(a.country) = '%s'
+                and forecast_date = (select max(forecast_date) from  PRH_GLOBAL.PUBLIC.F_REGION_AMZ_FORECAST where lower(region_code) = '%s' )
+            
+            group by 1,2,3, 4 
+            order by 1,5 desc nulls last   
+        )
+
+        , DK_INV as (
+
+            select 
+                a.region_code, b.asin , b.material, b.title_full, 
+                sum(a.net_inv) as Stock_at_TBS
+            
+            from PRH_GLOBAL..D_REGION_INV_DAILY a
+            left join PRH_GLOBAL.PUBLIC.D_REGION_PROD b	
+            ON a.prod_key = b.prod_key and a.region_code = b.region_code       
+            
+            where 
+                b.company = 'DK' 
+                and lower(a.region_code) = '%s'
+                and a.date = (select max(date) from  PRH_GLOBAL..D_REGION_INV_DAILY where lower(region_code) = '%s' )
+            
+            group by 1,2,3,4
+            order by 1, 5 desc nulls last
+
+        )
+
+        select a.region_code, a.asin, a.material, a.title_full, b.AMZ_INV,  c.Stock_at_TBS, b.AMZ_Open_Orders  from sub a
+        left join AMZ_INV b on a.material = b.material and a.region_code = b.country
+        left join DK_INV c on a.material = c.material and a.region_code = c.region_code
+
+        order by 5 desc nulls last
+        """% (country_var, country_var, country_var, country_var, country_var)
         
         cur.execute(sql_context)
     
@@ -220,45 +277,16 @@ def connect():
 
         #Checking if latest data is available
         if not record :
-            print('No Amazon scrape')
-            raise LatestDataCheck()  
+            print('No Inventory data')
+            raise LatestDataCheck()
 
         #Writing csv file
-        with open('Scrape info %s.csv'% (country_var), 'w') as f:
+        with open('Inventory %s.csv'% (country_var), 'w') as f:
             column_names = [i[0] for i in cur.description]
             file = csv.writer(f, lineterminator = '\n')
             file.writerow(column_names)
-            file.writerows(record)  
-            print('Latest scrape data saved \n')
-
-
-
-        #BH: Ask Stephane if we still need it
-        
-        #Getting AMZ Stock status
-        #sql_context = """
-        #select * from vw_amazon_stock_alert_14d
-        #"""
-        
-        #cur.execute(sql_context)
-    
-        # Fetch all rows from database
-        #record = cur.fetchall()
-            
-
-        #Writing csv file
-        #outputquery = "COPY ({0}) TO STDOUT WITH CSV HEADER".format(sql_context)
-
-        #with open('AMZ Stock status.csv', 'w') as f:
-        #    cur.copy_expert(outputquery, f)    
-        #    print('Latest stock status data saved \n')
-
-
-
-                        
-
-
-            
+            file.writerows(record)   
+            print('Latest Inventory data saved \n')
        
         #close the communication with the PostgreSQL
         cur.close()

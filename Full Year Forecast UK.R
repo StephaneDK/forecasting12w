@@ -42,7 +42,7 @@ convert.brackets <- function(x){
   }
 }
 
-current_quarter <- c("Q4")
+current_quarter <- c("Q2")
 
 #Setting the directory where all files will be used from for this project
 setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
@@ -65,38 +65,50 @@ Sales_UK <- Sales_UK %>%
 
 Q1 <- Sales_UK
 
-#Importing and clean Reprint and AA Data
-Reprint <- read.csv("UK Inventory.csv", header = T, stringsAsFactors = FALSE) #sort(colnames(Reprint))
-Reprint <- Reprint %>%
-           select(ASIN, 
-                  Amazon.On.Hand.Report...14th.Dec, #Amazon.On.Hand.Report     OR    Available.Inventory
-                  Stock.at.TBS, 
-                  Reprint.Dates, 
-                  Open.Purchase.Order.Quantity, 
-                  B3.Status, 
-                  Amazon.Focus.Status...19.10,#Focus.List.Current.Status
-                  Reprint.Quantity 
-                  ) %>%
-           set_colnames(c("asin", 
-                          "Amz inv", 
-                          "TBS inv",  
-                          "Reprint.Date", 
-                          "AMZ Open Orders", 
-                          "Print Status",
-                          "AA Status",
-                          "Reprint Qty"))  %>%
-           mutate(Reprint.Date = as.Date(Reprint.Date, format = "%d/%m/%Y"),
-                  `Amz inv` =  suppressWarnings(as.numeric(gsub(",","",`Amz inv`))),
-                  `TBS inv` =  gsub("#N/A",0,`TBS inv`) %>% gsub(" ","",.) %>%  gsub(",","",.)  %>% gsub("\\b-\\b","0",.) %>% 
-                                                            sapply( ., convert.brackets, USE.NAMES = F) %>%  as.numeric(.),
-                  `Reprint Qty` =  suppressWarnings(as.numeric(gsub(",","",`Reprint Qty`))),
-                  `AMZ Open Orders` =  suppressWarnings(as.numeric(gsub(",","",`AMZ Open Orders`))),
-                  `Reprint Qty` = replace(`Reprint Qty`, is.na(`Reprint Qty`), NaN),
-                  asin = case_when(nchar(asin) == 9 ~ paste0("0",asin),TRUE ~ asin)
-                  )  %>%
-           mutate(Reprint.Date = Reprint.Date + 6 - match(weekdays(Reprint.Date), all_days))
+#Import AA Data
+AA_status <-  read.csv("AA Status uk.csv", header = T, stringsAsFactors = FALSE)
+colnames(AA_status) <- c("ISBN", "AA_status")
 
-#View(Reprint)
+#Import Print Status Data
+Print_status <-  read.csv("Print Status uk.csv", header = T, stringsAsFactors = FALSE)
+colnames(Print_status) <- c(  "ISBN", "Print_status")
+
+
+#Importing reprint dates & quantity
+Reprint2 <- read.csv("Reprint.csv", header = T, stringsAsFactors = FALSE) 
+#sort(colnames(Reprint2))
+Reprint2 <- Reprint2 %>% 
+  subset(Print.Instruction.Impression %in% c("DK UK" ) ) %>% 
+  mutate(Schedule.Date = as.Date(Schedule.Date, format = "%d/%m/%Y")) %>% 
+  select( ISBN, Schedule.Date,  Print.Instruction.Quantity) %>% 
+  group_by(ISBN) %>%
+  filter(Schedule.Date == min(Schedule.Date) )  %>%
+  top_n(1, Print.Instruction.Quantity) %>%
+  set_colnames(c( "ISBN", "Reprint.Date", "Reprint Qty" ))
+
+
+#Importing Inventory
+Inventory <- read.csv("Inventory uk.csv", header = T, stringsAsFactors = FALSE) 
+#sort(colnames(Reprint2))
+
+Inventory <- Inventory %>% 
+  select( ASIN, MATERIAL, AMZ_INV, STOCK_AT_TBS, AMZ_OPEN_ORDERS) %>% 
+  set_colnames(c("asin" ,"ISBN", "Amz inv", "TBS inv", "AMZ Open Orders" )) %>%
+  merge( Reprint2, by = "ISBN", all.x = T) %>%
+  merge( AA_status, by = "ISBN", all.x = T) %>%
+  merge( Print_status, by = "ISBN", all.x = T) %>%
+  select(asin, ISBN, `Amz inv`, `TBS inv`, Reprint.Date, 
+         `AMZ Open Orders`, Print_status, AA_status,
+         `Reprint Qty`) %>%
+  dplyr::rename("Print Status" = "Print_status",
+                "AA Status" = "AA_status") %>%
+  mutate(Reprint.Date = Reprint.Date + 6 - match(weekdays(Reprint.Date), all_days),
+         `TBS inv` = ifelse(is.na(`TBS inv`), 0, `TBS inv`),
+         `Amz inv` =  ifelse(is.na(`Amz inv`), 0, `Amz inv`),
+         `Reprint Qty` = replace(`Reprint Qty`, is.na(`Reprint Qty`), NaN),
+         ISBN = NULL)
+  
+Reprint <- Inventory
 
 
 #Import seasonal titles --------------------------------------------------------------------------------------------------
@@ -195,7 +207,7 @@ pred_df_holt_damp_beta <- ChristmasAdjustment(pred_df_holt_damp_beta, Q1)
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% Q_iso$asin, ]
-prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-06-18", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-09-17", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
@@ -205,7 +217,6 @@ colnames(Seas_adjQ) <- colnames(prev_year)
 
 Seas_adjQ$asin <- prev_year$asin
 Seas_adjQ$title <- prev_year$title
-
 
 
 
@@ -260,7 +271,6 @@ for (i in 1:nrow(pred_df_holt_damp_beta)){
     }
   }
 }
-
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -492,7 +502,11 @@ Hitlist_titles <- c("0241315611","0241343267","0241424305","0241357551","0241224
                     "024135871X","0241302323","0241426162","024133439X","0241440610","0241286123","0241446619",
                     "0241515106","0241446341","0241412706")
 
-
+ignore_list <- c("9780241228371", "9781405328319", "9780241407721", "9780241511107", "9780241509746", "9780241559482",
+                 "9780241509678", "9780241533321", "9780241520475", "9781409347965", "9780241327388", "9780241462621",
+                 "9781405351782", "9780241520475", "9780241509654", "9780241509586", "9781405336598", "9780241510643",
+                 "9781405375818", "9780241462836", "9780751321531", "9780241361979", "9780241368848", "9780241509616",
+                 "9780241533307", "9780241510599", "9780241544310", "9780241568897", "9780241598436")
 
 
 # --------------------------------------------------------------------------------------------------------------
@@ -546,13 +560,16 @@ yellow_style <- createStyle(fgFill="#FFFF00")
 orange_style <- createStyle(fgFill="#FFA500")
 
 
+#x <- which( pred_df_holt_damp_beta$WOH_AMZ %in% c(1,2)  & pred_df_holt_damp_beta$`Print Status`!= "Out of Print")
+#addStyle(wb, sheet="UK", style=orange_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
+         #gridExpand=TRUE, stack = TRUE) # +1 for header line
 
-x <- which( pred_df_holt_damp_beta$WOH_AMZ %in% c(1,2)  & pred_df_holt_damp_beta$`Print Status`!= "Out of Print")
-addStyle(wb, sheet="UK", style=orange_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
-         gridExpand=TRUE, stack = TRUE) # +1 for header line
 
-#y <- which( colnames(pred_df_holt_damp_beta)=="Inv_issue" )
-x <- which( pred_df_holt_damp_beta$Inv_issue ==1  & pred_df_holt_damp_beta$`Print Status`!= "Out of Print")
+x <- which( pred_df_holt_damp_beta$Inv_issue == 1  
+            & pred_df_holt_damp_beta$`Print Status`!= "Out of Print"
+            & (pred_df_holt_damp_beta$Reprint.Date >= Sys.Date() + 100 | is.na(pred_df_holt_damp_beta$Reprint.Date) )
+            & pred_df_holt_damp_beta$isbn %notin% ignore_list)
+
 addStyle(wb, sheet="UK", style=yellow_style, rows=x+1, cols=c(1:ncol(pred_df_holt_damp_beta)), 
          gridExpand=TRUE, stack = TRUE) # +1 for header line
 
