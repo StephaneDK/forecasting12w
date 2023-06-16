@@ -77,10 +77,10 @@ Reprint2 <- read.csv("Reprint.csv", header = T, stringsAsFactors = FALSE)
 Reprint2 <- Reprint2 %>% 
   subset(Print.Instruction.Impression %in% c("DK US", "DK US (Alpha/Brady)", "DK US (DK RG SS)", "DK US (DK RG TR)", 
                                              "DK US (DK RG TR) USX", "DK US (USX)", "DK US REBEL GIRLS") ) %>% 
-  mutate(Schedule.Date = as.Date(Schedule.Date, format = "%d/%m/%Y")) %>% 
-  select( Print.Instruction.Edition, Schedule.Date,  Print.Instruction.Quantity) %>% 
+  mutate(Print.Instruction.Requested.Delivery.Date= as.Date(Print.Instruction.Requested.Delivery.Date, format = "%d/%m/%Y")) %>% 
+  select( Print.Instruction.Edition, Print.Instruction.Requested.Delivery.Date ,  Print.Instruction.Quantity) %>% 
   group_by(Print.Instruction.Edition) %>%
-  filter(Schedule.Date == min(Schedule.Date) )  %>%
+  filter(Print.Instruction.Requested.Delivery.Date  == min(Print.Instruction.Requested.Delivery.Date ) )  %>%
   top_n(1, Print.Instruction.Quantity) %>%
   set_colnames(c( "ISBN", "Reprint.Date", "Reprint Qty" ))
 
