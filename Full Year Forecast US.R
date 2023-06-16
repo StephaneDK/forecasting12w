@@ -88,10 +88,9 @@ Reprint2 <- Reprint2 %>%
 
 #Importing Inventory
 Inventory <- read.csv("Inventory us.csv", header = T, stringsAsFactors = FALSE) 
-#sort(colnames(Reprint2))
 
 Inventory <- Inventory %>% 
-  select( ASIN, MATERIAL, AMZ_INV, STOCK_AT_TBS, AMZ_OPEN_ORDERS) %>% 
+  select( ASIN, MATERIAL, AMZ_INV, TBS_INV, AMZ_OPEN_ORDERS) %>% 
   set_colnames(c("asin" ,"ISBN", "Amz inv", "TBS inv", "AMZ Open Orders" )) %>%
   merge( Reprint2, by = "ISBN", all.x = T) %>%
   mutate(title = "NA") %>%
@@ -103,7 +102,6 @@ Inventory <- Inventory %>%
          `Reprint Qty` = replace(`Reprint Qty`, is.na(`Reprint Qty`), NaN) )
 
 Reprint <- Inventory
-
 
 
 #Import Seasonal titles ---------------------------------------------------------------------------------------------------
