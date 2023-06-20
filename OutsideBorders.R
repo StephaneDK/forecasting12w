@@ -1,4 +1,5 @@
 library.path <- .libPaths("C:/Users/steph/Documents/R/win-library/4.0")
+#library.path <- .libPaths("C:\\Users\\snichanian\\Documents\\R\\R-4.0.3\\library")
 
 oldw <- getOption("warn")
 options(warn = -1)

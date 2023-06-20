@@ -1,4 +1,5 @@
 library.path <- .libPaths("C:/Users/steph/Documents/R/win-library/4.0")
+#library.path <- .libPaths("C:\\Users\\snichanian\\Documents\\R\\R-4.0.3\\library")
 source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\OutsideBorders.R")
 source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\ChristmasAdjustment.R")
 source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\TopTitlesAdjustment.R")
@@ -44,6 +45,7 @@ current_quarter <- c("Q2")
 
 #Setting the directory where all files will be used from for this project
 setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
+#setwd("C:\\Users\\snichanian\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
 
 #Importing and clean Sales Data
 Sales_US <- read.csv("Sales US Bookscan.csv", header = T, stringsAsFactors = FALSE)

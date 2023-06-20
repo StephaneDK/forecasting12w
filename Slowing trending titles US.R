@@ -1,4 +1,5 @@
 library.path <- .libPaths("C:/Users/steph/Documents/R/win-library/4.0")
+#library.path <- .libPaths("C:\\Users\\snichanian\\Documents\\R\\R-4.0.3\\library")
 source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\OutsideBorders.R")
 
 cat("\nSlowing Trending Titles start\n")
@@ -31,6 +32,7 @@ options(scipen=999, digits = 3, error=function() { traceback(2); if(!interactive
 
 #Setting the directory where all files will be used from for this project
 setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
+#setwd("C:\\Users\\snichanian\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
 
 #Setting the date to read the correct previous week file
 all_days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
