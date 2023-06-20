@@ -9,8 +9,8 @@ from __future__ import print_function
 import os
 import sys
 
-#country_var = sys.argv[1]
-country_var = 'us'
+country_var = sys.argv[1]
+#country_var = 'us'
 
 os.chdir('C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
 #os.chdir('C:\\dev\\env\\dkwebsols-forecasting-12w-22ef3797943e')
