@@ -1,6 +1,6 @@
 #!/bin/sh
 
-country="us"
+country="uk"
 
 #outputString=$(python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Fetch_data.py" $country 2>qtemp);
 outputString=$(python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\fetch_data_snfk_dly.py" $country 2>qtemp);
@@ -20,22 +20,18 @@ if [[ $country == "uk" ]]; then
 elif [[ $country == "us" ]]; then
     Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Slowing trending titles US.R"
     Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Full Year Forecast US.R"
+    Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Bookscan Forecast US.R"
     
      
      
 fi
 
-python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Write_data.py" $country
+#python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Write_data.py" $country
 python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\write_data_snfk.py" $country
 
-Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Bookscan Forecast US.R"
+
 
 #python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Delete_Duplicate.py" 
-
-
-#python "C:\Users\Steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Update_View.py"
-
-#Rscript "C:\Users\Steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Update Dashboard.R"
 
 
 
