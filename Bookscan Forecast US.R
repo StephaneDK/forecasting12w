@@ -4,7 +4,7 @@ source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and invent
 source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\ChristmasAdjustment.R")
 source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\TopTitlesAdjustment.R")
 
-cat("\nForecast start\n")
+cat("\nBookscan Forecast start\n")
 
 oldw <- getOption("warn")
 options(warn = -1)
@@ -195,7 +195,7 @@ pred_df_holt_damp_beta <- ChristmasAdjustment(pred_df_holt_damp_beta, Q1)
 
 #Create 2020 only data frame
 prev_year <- Q1[ Q1$asin %in% Q_iso$asin, ]
-prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-09-17", colnames(Q1))) ]
+prev_year <- prev_year[,c(1,3,grep("2021-01-02", colnames(Q1)): grep("2022-12-31", colnames(Q1))) ]
 prev_year[prev_year <= 0] <- 1
 
 
@@ -616,4 +616,4 @@ pred_date <- Sys.Date() + 6 - match(weekdays(Sys.Date()), all_days)
 saveWorkbook(wb, paste0("Bookscan Forecast us - ",pred_date,".xlsx"), overwrite = T) 
 
 
-cat("\nForecast end\n")
+cat("\nBookscan Forecast end\n")

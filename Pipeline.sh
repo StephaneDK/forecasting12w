@@ -1,6 +1,6 @@
 #!/bin/sh
 
-country="uk"
+country="us"
 
 #outputString=$(python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Fetch_data.py" $country 2>qtemp);
 outputString=$(python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\fetch_data_snfk_dly.py" $country 2>qtemp);
