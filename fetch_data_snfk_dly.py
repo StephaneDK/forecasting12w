@@ -311,7 +311,7 @@ def connect():
             and a.POS_ACCT in ('AMZ')
             and week_end_date =   (select max(week_end_date) from PRH_GLOBAL.PUBLIC.F_REGION_POS_SALES_WK 
                                    where company = 'DK' and country = 'US'
-                                   and QTY_INV is not null and POS_ACCT in ('A4', 'AMZ') 
+                                   and QTY_INV is not null and QTY_INV !=0  and POS_ACCT in ('A4', 'AMZ') 
                                      )
             
             group by 1,2,3,4,5 
