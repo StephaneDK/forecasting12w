@@ -1,19 +1,15 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr  6 10:33:22 2021
-
-@author: Becky
-"""
 
 from __future__ import print_function
 import os
 import sys
+import os.path
+from pathlib import Path
 
-country_var = sys.argv[1]
-#country_var = 'us'
+path_python = os.environ["path_code"].replace("Code","csv")
+country_var = os.environ["country"]
 
-os.chdir('C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
-#os.chdir('C:\\Users\\snichanian\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
+os.chdir(path_python)
 
 class LatestDataCheck(Exception):
     pass
@@ -23,8 +19,7 @@ from datetime import date
 from datetime import timedelta
 today = date.today()
 last_saturday = today - timedelta(days= (today.weekday() - 5) % 7)
-last_saturday = last_saturday.strftime('%Y-%m-%d')
-#last_saturday = '2022-02-19' 
+last_saturday = last_saturday.strftime('%Y-%m-%d') 
 
 
 #Connecting to DB --------------------------------------------------------------------------------------------------------------------

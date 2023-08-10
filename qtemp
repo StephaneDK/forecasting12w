@@ -1,2 +1,0 @@
-C:\Users\steph\AppData\Local\Programs\Python\Python39\lib\site-packages\snowflake\connector\options.py:94: UserWarning: You have an incompatible version of 'pyarrow' installed (7.0.0), please install a version that adheres to: 'pyarrow<3.1.0,>=3.0.0; extra == "pandas"'
-  warn_incompatible_dep(

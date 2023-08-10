@@ -1,20 +1,16 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 13 15:47:43 2021
-
-@author: Becky
-"""
 
 from __future__ import print_function
 import os
 import sys
 
+path_python = os.environ["path_code"].replace("Code","csv")
+country_var = os.environ["country"]
 
-os.chdir('C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
+os.chdir(path_python)
+
+#os.chdir('C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
 #os.chdir('C:\\Users\\snichanian\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv')
-
-country_var = sys.argv[1]
-#country_var = "uk"
 
 class LatestDataCheck(Exception):
     pass

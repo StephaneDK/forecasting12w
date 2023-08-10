@@ -1,38 +1,51 @@
-library.path <- .libPaths("C:/Users/steph/Documents/R/win-library/4.0")
-#library.path <- .libPaths("C:\\Users\\snichanian\\Documents\\R\\R-4.0.3\\library")
-source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\OutsideBorders.R")
+cat("\nSlowing Trending UK Titles start\n")
+renv::activate()
 
-cat("\nSlowing Trending Titles start\n")
+#renv::init()
+#renv::status()
+#renv::restore()
+
+#Declaring variables for directories change
+path_var <- Sys.getenv("path_code")
+path_var_csv <- gsub("Code","csv",path_var)
+path_var_output <- gsub("Code","Output",path_var)
+
+#Calling outside scripts
+source(paste0(path_var,"OutsideBorders.R"))
 
 oldw <- getOption("warn")
 options(warn = -1)
 
 suppressMessages({
   
-  library(tidyverse, lib.loc = library.path)
-  library(stringr, lib.loc = library.path)
-  library(reshape2, lib.loc = library.path)
-  library(ggthemes, lib.loc = library.path)
-  library(gridExtra, lib.loc = library.path)
-  library(forecast, lib.loc = library.path)
-  library(aTSA, lib.loc = library.path)
-  library(DescTools, lib.loc = library.path)
-  library(plyr, lib.loc = library.path)
-  library(EnvStats, lib.loc = library.path)
-  library(qcc, lib.loc = library.path)
-  library(openxlsx, lib.loc = library.path)
-  library(magrittr, lib.loc = library.path)
+  library(tidyverse)
+  library(stringr)
+  library(reshape2)
+  library(ggthemes)
+  library(gridExtra)
+  library(forecast)
+  library(aTSA)
+  library(DescTools)
+  library(plyr)
+  library(EnvStats)
+  library(qcc)
+  library(openxlsx)
+  library(magrittr)
+  library(ggrepel)
+  
 })
+
 
 options(warn = oldw)
 
-options(scipen=999, digits = 3, error=function() { traceback(2); if(!interactive()) quit("no", status = 1, runLast = FALSE) } )
+options(scipen=999, digits = 3 )
 
 
 `%notin%` <- Negate(`%in%`)
 
 #Setting the directory where all files will be used from for this project
-setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
+setwd(path_var_csv)
+#setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
 #setwd("C:\\Users\\snichanian\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
 
 #Setting the date to read the correct previous week file
@@ -156,7 +169,8 @@ freezePane(
 
 saveWorkbook(wb, paste0("Slowing trending titles UK - ",pred_date +7,".xlsx"), overwrite = T) 
 
+renv::deactivate()
 
-cat("Slowing Trending Titles end\n")
+cat("Slowing Trending UK Titles end\n\n")
 
 

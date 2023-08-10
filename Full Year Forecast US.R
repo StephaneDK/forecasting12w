@@ -1,30 +1,38 @@
-library.path <- .libPaths("C:/Users/steph/Documents/R/win-library/4.0")
-#library.path <- .libPaths("C:\\Users\\snichanian\\Documents\\R\\R-4.0.3\\library")
-source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\OutsideBorders.R")
-source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\ChristmasAdjustment.R")
-source("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\Code\\TopTitlesAdjustment.R")
+cat("\nUS Forecast start")
+renv::activate()
 
-cat("\nForecast start\n")
+
+#Declaring variables for directories change
+path_var <- Sys.getenv("path_code")
+path_var_csv <- gsub("Code","csv",path_var)
+
+#Calling outside scripts
+source(paste0(path_var,"OutsideBorders.R"))
+source(paste0(path_var,"ChristmasAdjustment.R"))
+source(paste0(path_var,"TopTitlesAdjustment.R"))
 
 oldw <- getOption("warn")
 options(warn = -1)
 
 suppressMessages({
   
-  library(tidyverse, lib.loc = library.path)
-  library(stringr, lib.loc = library.path)
-  library(reshape2, lib.loc = library.path)
-  library(ggthemes, lib.loc = library.path)
-  library(gridExtra, lib.loc = library.path)
-  library(forecast, lib.loc = library.path)
-  library(aTSA, lib.loc = library.path)
-  library(DescTools, lib.loc = library.path)
-  library(plyr, lib.loc = library.path)
-  library(EnvStats, lib.loc = library.path)
-  library(qcc, lib.loc = library.path)
-  library(openxlsx, lib.loc = library.path)
-  library(magrittr, lib.loc = library.path)
+  library(tidyverse)
+  library(stringr)
+  library(reshape2)
+  library(ggthemes)
+  library(gridExtra)
+  library(forecast)
+  library(aTSA)
+  library(DescTools)
+  library(plyr)
+  library(EnvStats)
+  library(qcc)
+  library(openxlsx)
+  library(magrittr)
+  library(ggrepel)
+  
 })
+
 
 options(warn = oldw)
 
@@ -44,7 +52,8 @@ convert.brackets <- function(x){
 current_quarter <- c("Q2")
 
 #Setting the directory where all files will be used from for this project
-setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
+setwd(path_var_csv)
+#setwd("C:\\Users\\steph\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
 #setwd("C:\\Users\\snichanian\\Documents\\DK\\Work\\Forecasting book sales and inventory\\Pipeline\\csv")
 
 #Importing and clean Sales Data
@@ -694,4 +703,6 @@ write.csv(write_db, "Q1 Forecast us.csv",row.names = FALSE, quote = FALSE)
 pred_df_holt_damp_beta$`Reprint Qty` <- NULL
 saveRDS(pred_df_holt_damp_beta, "pred_df_holt_damp_beta_US.rds")
 
-cat("\nForecast end\n")
+renv::deactivate()
+
+cat("\nUS Forecast end\n")

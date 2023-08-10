@@ -1,0 +1,11 @@
+cd "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code"
+
+conda activate forecast_env
+
+chmod +x Pipeline.sh 
+
+./Pipeline.sh 
+
+conda deactivate
+
+bitbuycket app pw: Q9NS6nLbmHVd57MfuJVQ

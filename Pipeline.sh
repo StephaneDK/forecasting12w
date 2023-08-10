@@ -1,9 +1,21 @@
 #!/bin/sh
 
+#Forecasting paths
+path_local='C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\'
+path_DK='C:\Users\snichanian\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\'
+
+#Forecastin Country
 country="us"
 
-#outputString=$(python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Fetch_data.py" $country 2>qtemp);
-outputString=$(python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\fetch_data_snfk_dly.py" $country 2>qtemp);
+#Change this line for directory
+path_code=$path_local
+
+export path_code
+export country
+
+cd "$path_code"
+
+outputString=$(python "fetch_data_snfk_dly.py" 2>qtemp);
 
 stderrString=$(<qtemp);
 echo "$outputString"
@@ -14,24 +26,17 @@ if [[ "$stderrString" == "ValueError1" ]]; then
 fi
 
 if [[ $country == "uk" ]]; then
-    Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Slowing trending titles UK.R" 
-    Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Full Year Forecast UK.R" 
+    Rscript "Slowing trending titles UK.R" 
+    Rscript "Full Year Forecast UK.R" 
      
 elif [[ $country == "us" ]]; then
-    Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Slowing trending titles US.R"
-    Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Full Year Forecast US.R"
-    Rscript "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Bookscan Forecast US.R"
-    
-     
+    Rscript "Slowing trending titles US.R"
+    Rscript "Full Year Forecast US.R"
+    Rscript "Bookscan Forecast US.R"
      
 fi
 
-#python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Write_data.py" $country
-python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\write_data_snfk.py" $country
-
-
-
-#python "C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\Delete_Duplicate.py" 
+#python "write_data_snfk.py" $country
 
 
 
