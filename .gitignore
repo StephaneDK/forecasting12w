@@ -6,11 +6,12 @@ Pipeline - DK.sh
 Code.Rproj
 .Rproj.user
 .Rhistory
-Pipeline.sh
 snowpy.py
 fetch_data_snfk.py
 Update_View.py
 Extract_email.py
 Delete_Duplicate.py
 qtemp
-
+Update Dashboard.R
+Pipeline - DK.sh
+Fetch_data.py
