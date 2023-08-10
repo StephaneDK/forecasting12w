@@ -36,7 +36,7 @@ elif [[ $country == "us" ]]; then
      
 fi
 
-#python "write_data_snfk.py" $country
+python "write_data_snfk.py" $country
 
 
 
