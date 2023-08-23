@@ -55,11 +55,11 @@ We also use the Python files to write the resulting forecasts into the database 
 * PRH_GLOBAL_DK_SANDBOX.PUBLIC.FORECASTING_TEMP
 * PRH_GLOBAL_DK_SANDBOX.PUBLIC.FORECASTING_STATISTICS_TEMP
 
-The R files are used to create the forecasting models and execute the calculations, once the forecasts are completed, the R file will save the output in a xlsx file which is then shared with our inventory teams.
+The R files are used to create the forecasting models and execute the calculations. Once the forecasts are completed, the R file will save the output in a xlsx file which is then shared with our inventory teams.
 
 Finally, the Shell script is used to sequentially call the various forecasting scripts.
 
-A central part of this repository is reproducibility, so that the forecasting pipeline can be run by any D&A team members on DK work laptops.  
+A central part of this repository is reproducibility. This repository is designed to assist D&A team members to run the forecasting pipeline from their DK work laptops smoothly.  
 For this purpose, it is suggested that a virtual environment is created with all the necessary libraries and packages provided in the requirements.txt and renv.lock files.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -102,6 +102,12 @@ It is strongly suggested to use a virtual environment for this project. Given th
    conda activate ENV_NAME 
    ```
 
+**Installing required libraries from requirement.txt**
+   ```sh
+   pip install -r requirements.txt 
+   ```
+
+
 **Create a R Environment**
    ```sh
    renv::init()
@@ -111,6 +117,12 @@ It is strongly suggested to use a virtual environment for this project. Given th
    ```sh
    renv::activate() 
    ```
+
+**Install required packages from renv.lock**
+   ```sh
+   renv::restore() 
+   ```
+
 The code is set up so that the R virtual environment is activated and deactivated in the Rscript files directly, so this step doesn't need to be run explicitly.
 
 The required libraries to be installed can be found in the requirements.txt and renv.lock files.
