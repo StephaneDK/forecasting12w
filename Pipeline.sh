@@ -1,10 +1,14 @@
 #!/bin/sh
 
+source "C:\Users\steph\miniconda3\etc\profile.d\conda.sh"
+#source "C:\Users\snichanian\miniconda3\etc\profile.d\conda.sh"
+conda activate forecast_env
+
 #Forecasting paths
 path_local='C:\Users\steph\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\'
 path_DK='C:\Users\snichanian\Documents\DK\Work\Forecasting book sales and inventory\Pipeline\Code\'
 
-#Forecastin Country
+#Forecasting Country
 country="us"
 
 #Change this line for directory
@@ -37,6 +41,8 @@ elif [[ $country == "us" ]]; then
 fi
 
 python "write_data_snfk.py" $country
+
+conda deactivate
 
 
 
